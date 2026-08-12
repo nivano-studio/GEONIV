@@ -39,6 +39,20 @@ except Exception:
 
 app = FastAPI(title="GEONIV 3D - Plataforma de Inteligência OSINT & GEOINT")
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "Runtime Exception in FastAPI",
+            "path": str(request.url),
+            "error": str(exc),
+            "type": type(exc).__name__,
+            "traceback": traceback.format_exc()
+        }
+    )
+
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
