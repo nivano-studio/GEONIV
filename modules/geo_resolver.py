@@ -9,9 +9,13 @@ _REVERSE_GEOCODE_CACHE: Dict[str, Dict[str, Any]] = {}
 
 # Importar banco de DDDs se disponível em phone_osint
 try:
-    from phone_osint import DDD_MAP
+    from modules.phone_osint import DDD_MAP
 except ImportError:
-    DDD_MAP = {}
+    try:
+        from phone_osint import DDD_MAP
+    except ImportError:
+        DDD_MAP = {}
+
 
 def reverse_geocode(lat: float, lng: float) -> Dict[str, Any]:
     """

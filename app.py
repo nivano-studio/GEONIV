@@ -15,9 +15,10 @@ from fastapi.templating import Jinja2Templates
 import shutil
 from PIL import Image
 
-from exif_extractor import extract_metadata
-from metadata_extractor import analyze_any_file
-from phone_osint import phone_lookup
+from modules.exif_extractor import extract_metadata
+from modules.metadata_extractor import analyze_any_file
+from modules.phone_osint import phone_lookup
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")

@@ -22,7 +22,11 @@ try:
 except ImportError:
     PYPDF_AVAILABLE = False
 
-from geo_resolver import reverse_geocode, detect_scrubbing_and_clues, get_reverse_image_search_pivots
+try:
+    from modules.geo_resolver import reverse_geocode, detect_scrubbing_and_clues, get_reverse_image_search_pivots, resolve_cep_to_location
+except ImportError:
+    from geo_resolver import reverse_geocode, detect_scrubbing_and_clues, get_reverse_image_search_pivots, resolve_cep_to_location
+
 
 
 def compute_file_hashes(filepath: str) -> Dict[str, str]:
