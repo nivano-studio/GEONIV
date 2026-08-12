@@ -6,7 +6,7 @@ from PIL import Image, ExifTags
 try:
     from pillow_heif import register_heif_opener
     register_heif_opener()
-except ImportError:
+except Exception:
     pass
 
 def _convert_to_degrees(value) -> float:

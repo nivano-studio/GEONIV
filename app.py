@@ -21,10 +21,22 @@ from modules.phone_osint import phone_lookup
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
-DATA_FILE = os.path.join(BASE_DIR, "geoniv_data.json")
 
-os.makedirs(UPLOADS_DIR, exist_ok=True)
+# Suporte ao ambiente Serverless da Vercel (sistema de arquivos read-only)
+IS_VERCEL = os.environ.get("VERCEL") == "1" or os.environ.get("VERCEL_ENV") is not None
+
+if IS_VERCEL:
+    UPLOADS_DIR = "/tmp/uploads"
+    DATA_FILE = "/tmp/geoniv_data.json"
+else:
+    UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+    DATA_FILE = os.path.join(BASE_DIR, "geoniv_data.json")
+
+try:
+    os.makedirs(UPLOADS_DIR, exist_ok=True)
+except Exception:
+    UPLOADS_DIR = "/tmp/uploads"
+    os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 app = FastAPI(title="GEONIV 3D - Plataforma de Inteligência OSINT & GEOINT")
 
@@ -33,19 +45,33 @@ app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# --- GERENCIAMENTO DE DADOS LOCAL (JSON) ---
+# --- GERENCIAMENTO DE DADOS LOCAL (JSON) COM SUPORTE A READ-ONLY ---
 def load_records() -> list:
-    if not os.path.exists(DATA_FILE):
-        return []
+    target_file = DATA_FILE
+    if not os.path.exists(target_file):
+        seed_file = os.path.join(BASE_DIR, "geoniv_data.json")
+        if os.path.exists(seed_file):
+            target_file = seed_file
+        else:
+            return []
     try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+        with open(target_file, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return []
 
 def save_records(records: list):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(records, f, ensure_ascii=False, indent=2)
+    target_file = DATA_FILE
+    try:
+        with open(target_file, "w", encoding="utf-8") as f:
+            json.dump(records, f, ensure_ascii=False, indent=2)
+    except (PermissionError, OSError):
+        tmp_file = "/tmp/geoniv_data.json"
+        try:
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(records, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
 
 def generate_next_code(records: list) -> str:
     count = len(records) + 1
