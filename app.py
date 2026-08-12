@@ -76,16 +76,10 @@ def generate_next_code(records: list) -> str:
     count = len(records) + 1
     return f"GEO-{count:03d}"
 
-# --- MIDDLEWARE DE ROTEAMENTO VERCEL SERVERLESS ---
-@app.middleware("http")
-async def fix_vercel_path(request: Request, call_next):
-    path = request.scope.get("path", "")
-    if path in ["/api/index.py", "/api/index", "/api/index/"]:
-        request.scope["path"] = "/"
-    return await call_next(request)
-
 # --- ROTAS DA INTERFACE WEB ---
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/", response_class=HTMLResponse)
 @app.get("/api/index", response_class=HTMLResponse)
 @app.get("/api/index.py", response_class=HTMLResponse)
 async def read_index(request: Request):
