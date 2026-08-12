@@ -1,0 +1,642 @@
+[
+  {
+    "id": "80e87017-70d5-4080-990c-25e0867a00cc",
+    "code": "GEO-001",
+    "title": "IMG_2265.HEIC",
+    "notes": "Foto mapeada via upload GEONIV EXIF GPS.",
+    "photo_url": "/uploads/img_6a2bd4ea26.jpg",
+    "filename": "IMG_2265.HEIC",
+    "latitude": -3.6794,
+    "longitude": -42.7534417,
+    "altitude": 69.1,
+    "has_gps": true,
+    "date_added": "2026:08:06 11:45:20",
+    "camera_info": "Apple iPhone 11"
+  },
+  {
+    "id": "bbf698f0-25cc-4b52-9f61-8db08f9672be",
+    "code": "GEO-002",
+    "title": "IMG_2265.HEIC",
+    "notes": "Foto analisada via plataforma GEONIV OSINT.",
+    "photo_url": "/uploads/img_2b76745fc7.jpg",
+    "filename": "IMG_2265.HEIC",
+    "latitude": -3.6794,
+    "longitude": -42.7534417,
+    "altitude": 69.1,
+    "has_gps": true,
+    "date_added": "2026:08:06 11:45:20",
+    "camera_info": "Apple iPhone 11",
+    "software": "18.5",
+    "is_edited": false,
+    "iso": "250",
+    "aperture": "f/1.8",
+    "focal_length": "4.2mm",
+    "exposure_time": "0.016666666666666666s",
+    "lens_model": "iPhone 11 back dual wide camera 4.25mm f/1.8",
+    "dimensions": "3024 x 4032"
+  },
+  {
+    "id": "12b75fa2-0ccb-4ae7-a358-6a53e44e5d0e",
+    "code": "GEO-003",
+    "title": "Servidor 8.8.8.8",
+    "filename": "IP: 8.8.8.8",
+    "latitude": 39.03,
+    "longitude": -77.5,
+    "altitude": 0.0,
+    "has_gps": true,
+    "date_added": "2026-08-09 18:41:04",
+    "camera_info": "ISP: Google LLC (AS15169 Google LLC)",
+    "notes": "Localizado em Ashburn, United States. Org: Google Public DNS"
+  },
+  {
+    "id": "6feb2c23-0c48-43fc-8a40-ccef1b77731d",
+    "code": "GEO-004",
+    "title": "Servidor www.nivanostudio.com.br",
+    "filename": "IP: 216.198.79.65",
+    "latitude": 41.5059,
+    "longitude": -81.689,
+    "altitude": 0.0,
+    "has_gps": true,
+    "date_added": "2026-08-09 18:42:23",
+    "camera_info": "ISP: Network Billing Systems (AS16509 Amazon.com, Inc.)",
+    "notes": "Localizado em Cleveland, United States. Org: CYPRESS COMMUNICATIONS, LLC"
+  },
+  {
+    "id": "af3fc595-d8a9-4b9d-89ec-ec38d9c68275",
+    "code": "GEO-005",
+    "title": "Tel: +55 (11) 98765-4321",
+    "filename": "Telefone: +55 (11) 98765-4321",
+    "latitude": -23.5505,
+    "longitude": -46.6333,
+    "altitude": 0.0,
+    "has_gps": true,
+    "date_added": "2026-08-11 22:35:33",
+    "camera_info": "Operadora: Oi (Telemar)",
+    "notes": "DDD 11 — São Paulo/SP. Tipo: Celular / Móvel. Operadora (prefixo): Oi (Telemar) — indicação pelo prefixo original"
+  },
+  {
+    "id": "98d39378-0340-4394-bf1c-deea74a3f84f",
+    "code": "GEO-006",
+    "title": "Tel: +55 (21) 96698-2409",
+    "filename": "Telefone: +55 (21) 96698-2409",
+    "latitude": -22.9068,
+    "longitude": -43.1729,
+    "altitude": 0.0,
+    "has_gps": true,
+    "date_added": "2026-08-11 22:42:40",
+    "camera_info": "Operadora: Operadora não determinada pelo prefixo",
+    "notes": "DDD 21 — Rio de Janeiro/RJ. Tipo: Celular / Móvel. Operadora (prefixo): Operadora não determinada pelo prefixo"
+  },
+  {
+    "id": "753cc37a-c55e-46dc-ab40-a5da5bed0cb6",
+    "code": "GEO-007",
+    "title": "Tel: +55 (21) 96698-2409",
+    "filename": "Telefone: +55 (21) 96698-2409",
+    "latitude": -22.9068,
+    "longitude": -43.1729,
+    "altitude": 0.0,
+    "has_gps": true,
+    "date_added": "2026-08-11 22:44:54",
+    "camera_info": "Operadora: Operadora não determinada pelo prefixo",
+    "notes": "DDD 21 — Rio de Janeiro/RJ. Tipo: Celular / Móvel. Operadora (prefixo): Operadora não determinada pelo prefixo"
+  },
+  {
+    "id": "7e75b7cc-ab0f-453e-86f3-902ccf4066aa",
+    "code": "GEO-008",
+    "title": "Tel: +55 (98) 98475-1294",
+    "filename": "Telefone: +55 (98) 98475-1294",
+    "latitude": -2.5387,
+    "longitude": -44.2826,
+    "altitude": 0.0,
+    "has_gps": true,
+    "date_added": "2026-08-12 08:58:08",
+    "camera_info": "Operadora: TIM (Telecom Italia)",
+    "notes": "DDD 98 — São Luís/MA. Tipo: Celular / Móvel. Operadora (prefixo): TIM (Telecom Italia) — indicação pelo prefixo original"
+  },
+  {
+    "id": "4646cfe7-ff5b-44d6-9a84-e80d0173656d",
+    "code": "GEO-009",
+    "title": "SER CONNECT - AMBIENTE VIRTUAL DE APRENDIZAGEM AVA .pdf",
+    "notes": "Foto analisada via plataforma GEONIV OSINT.",
+    "photo_url": "/uploads/file_abdd83ee8d.pdf",
+    "filename": "SER CONNECT - AMBIENTE VIRTUAL DE APRENDIZAGEM AVA .pdf",
+    "category": "pdf",
+    "file_size": "1.69 MB",
+    "file_size_bytes": 1766972,
+    "mime_type": "application/pdf",
+    "hashes": {
+      "md5": "847bdfcd6173fec8f684517e669aed29",
+      "sha256": "c63c5464ab84dde351e4376446ca60279c8f201eb219dc795899367c649f73c5"
+    },
+    "latitude": null,
+    "longitude": null,
+    "altitude": null,
+    "has_gps": false,
+    "is_inferred_gps": false,
+    "address": null,
+    "date_added": "20251210104708-03'00'",
+    "camera_info": "PDF (29 Pág)",
+    "software": null,
+    "is_edited": false,
+    "iso": null,
+    "aperture": null,
+    "focal_length": null,
+    "exposure_time": null,
+    "lens_model": null,
+    "dimensions": null,
+    "specific_metadata": {
+      "title": "Apresentação do PowerPoint",
+      "author": "Aleksandr Ivanovitch Silva Alves",
+      "subject": null,
+      "creator": "Microsoft® PowerPoint® para Microsoft 365",
+      "producer": "Microsoft® PowerPoint® para Microsoft 365",
+      "creation_date": "20251210104708-03'00'",
+      "mod_date": "20251210104708-03'00'",
+      "pages_count": 29,
+      "is_encrypted": false,
+      "error": null
+    },
+    "scrubbing_analysis": null,
+    "osint_pivots": {
+      "google_lens": {
+        "name": "Google Lens",
+        "icon": "fa-brands fa-google",
+        "color": "#4285f4",
+        "url": "https://lens.google.com/",
+        "description": "Reconhecimento de objetos, texto, marcos históricos e locais."
+      },
+      "yandex_images": {
+        "name": "Yandex Visual GEOINT",
+        "icon": "fa-solid fa-eye",
+        "color": "#ff0000",
+        "url": "https://yandex.com/images/search",
+        "description": "Líder mundial em geolocalização OSINT por correspondência visual de estruturas."
+      },
+      "bing_visual": {
+        "name": "Bing Visual Search",
+        "icon": "fa-brands fa-microsoft",
+        "color": "#00838f",
+        "url": "https://www.bing.com/visualsearch",
+        "description": "Identificação de arquitetura e pesquisa visual."
+      },
+      "tineye": {
+        "name": "TinEye Reverse Search",
+        "icon": "fa-solid fa-robot",
+        "color": "#0284c7",
+        "url": "https://tineye.com/",
+        "description": "Rastreamento da versão mais antiga e sem edição da imagem na web."
+      },
+      "geospy": {
+        "name": "GeoSpy AI (GEOINT)",
+        "icon": "fa-solid fa-brain",
+        "color": "#10b981",
+        "url": "https://geospy.ai/",
+        "description": "IA especializada em prever coordenadas geográficas a partir de elementos da paisagem."
+      }
+    }
+  },
+  {
+    "id": "a895fbe5-39a2-4de6-bdc2-04b5e5677c4e",
+    "code": "GEO-010",
+    "title": "TUTORIAL - PROVA PRESENCIAL 2026.1 - POLO PARCEIRO.pdf",
+    "notes": "Foto analisada via plataforma GEONIV OSINT.",
+    "photo_url": "/uploads/file_3d5cf6ceb5.pdf",
+    "filename": "TUTORIAL - PROVA PRESENCIAL 2026.1 - POLO PARCEIRO.pdf",
+    "category": "pdf",
+    "file_size": "1.01 MB",
+    "file_size_bytes": 1060158,
+    "mime_type": "application/pdf",
+    "hashes": {
+      "md5": "19145821fc2507cbe89acb54fc587488",
+      "sha256": "72c13f9040bc33c75171a59f594b9ca54a96cd291ebcbffe227a769031190e80"
+    },
+    "latitude": null,
+    "longitude": null,
+    "altitude": null,
+    "has_gps": false,
+    "is_inferred_gps": false,
+    "address": null,
+    "date_added": "20260317095228-03'00'",
+    "camera_info": "PDF (12 Pág)",
+    "software": null,
+    "is_edited": false,
+    "iso": null,
+    "aperture": null,
+    "focal_length": null,
+    "exposure_time": null,
+    "lens_model": null,
+    "dimensions": null,
+    "specific_metadata": {
+      "title": null,
+      "author": null,
+      "subject": null,
+      "creator": "Microsoft® PowerPoint® para Microsoft 365",
+      "producer": "Microsoft® PowerPoint® para Microsoft 365",
+      "creation_date": "20260317095228-03'00'",
+      "mod_date": "20260317095228-03'00'",
+      "pages_count": 12,
+      "is_encrypted": false,
+      "error": null
+    },
+    "scrubbing_analysis": null,
+    "osint_pivots": {
+      "google_lens": {
+        "name": "Google Lens",
+        "icon": "fa-brands fa-google",
+        "color": "#4285f4",
+        "url": "https://lens.google.com/",
+        "description": "Reconhecimento de objetos, texto, marcos históricos e locais."
+      },
+      "yandex_images": {
+        "name": "Yandex Visual GEOINT",
+        "icon": "fa-solid fa-eye",
+        "color": "#ff0000",
+        "url": "https://yandex.com/images/search",
+        "description": "Líder mundial em geolocalização OSINT por correspondência visual de estruturas."
+      },
+      "bing_visual": {
+        "name": "Bing Visual Search",
+        "icon": "fa-brands fa-microsoft",
+        "color": "#00838f",
+        "url": "https://www.bing.com/visualsearch",
+        "description": "Identificação de arquitetura e pesquisa visual."
+      },
+      "tineye": {
+        "name": "TinEye Reverse Search",
+        "icon": "fa-solid fa-robot",
+        "color": "#0284c7",
+        "url": "https://tineye.com/",
+        "description": "Rastreamento da versão mais antiga e sem edição da imagem na web."
+      },
+      "geospy": {
+        "name": "GeoSpy AI (GEOINT)",
+        "icon": "fa-solid fa-brain",
+        "color": "#10b981",
+        "url": "https://geospy.ai/",
+        "description": "IA especializada em prever coordenadas geográficas a partir de elementos da paisagem."
+      }
+    }
+  },
+  {
+    "id": "9f42c6f0-d302-4049-9512-d3f827f19db7",
+    "code": "GEO-011",
+    "title": "Image.png",
+    "notes": "Foto analisada via plataforma GEONIV OSINT.",
+    "photo_url": "/uploads/img_e606f8d09f.jpg",
+    "filename": "Image.png",
+    "category": "image",
+    "file_size": "88.51 KB",
+    "file_size_bytes": 90630,
+    "mime_type": "image/png",
+    "hashes": {
+      "md5": "59937b3a40714f0b091edbd56befd557",
+      "sha256": "6e7fe316c5a2bdcb8e6f5451559592d6978f635ada47cafefec7944d45a8fcc8"
+    },
+    "latitude": null,
+    "longitude": null,
+    "altitude": null,
+    "has_gps": false,
+    "is_inferred_gps": false,
+    "address": null,
+    "date_added": "2026-08-12 09:00:12",
+    "camera_info": "None None",
+    "software": null,
+    "is_edited": false,
+    "iso": null,
+    "aperture": null,
+    "focal_length": null,
+    "exposure_time": null,
+    "lens_model": null,
+    "dimensions": "1917 x 897",
+    "specific_metadata": {
+      "has_gps": false,
+      "latitude": null,
+      "longitude": null,
+      "altitude": null,
+      "datetime": null,
+      "camera_make": null,
+      "camera_model": null,
+      "software": null,
+      "is_edited": false,
+      "iso": null,
+      "aperture": null,
+      "focal_length": null,
+      "exposure_time": null,
+      "lens_model": null,
+      "image_width": 1917,
+      "image_height": 897,
+      "has_exif": false,
+      "error": null
+    },
+    "scrubbing_analysis": {
+      "scrubbing_detected": true,
+      "scrubbing_source": "Software de Edição ou Rede Social",
+      "explanation": "Metadados EXIF ausentes. O arquivo pode ter sido exportado por editor gráfico (Photoshop, Canva) ou baixado da web.",
+      "inferred_coords": null,
+      "inferred_location_name": null,
+      "clues_found": []
+    },
+    "osint_pivots": {
+      "google_lens": {
+        "name": "Google Lens",
+        "icon": "fa-brands fa-google",
+        "color": "#4285f4",
+        "url": "https://lens.google.com/",
+        "description": "Reconhecimento de objetos, texto, marcos históricos e locais."
+      },
+      "yandex_images": {
+        "name": "Yandex Visual GEOINT",
+        "icon": "fa-solid fa-eye",
+        "color": "#ff0000",
+        "url": "https://yandex.com/images/search",
+        "description": "Líder mundial em geolocalização OSINT por correspondência visual de estruturas."
+      },
+      "bing_visual": {
+        "name": "Bing Visual Search",
+        "icon": "fa-brands fa-microsoft",
+        "color": "#00838f",
+        "url": "https://www.bing.com/visualsearch",
+        "description": "Identificação de arquitetura e pesquisa visual."
+      },
+      "tineye": {
+        "name": "TinEye Reverse Search",
+        "icon": "fa-solid fa-robot",
+        "color": "#0284c7",
+        "url": "https://tineye.com/",
+        "description": "Rastreamento da versão mais antiga e sem edição da imagem na web."
+      },
+      "geospy": {
+        "name": "GeoSpy AI (GEOINT)",
+        "icon": "fa-solid fa-brain",
+        "color": "#10b981",
+        "url": "https://geospy.ai/",
+        "description": "IA especializada em prever coordenadas geográficas a partir de elementos da paisagem."
+      }
+    }
+  },
+  {
+    "id": "e496e4d4-842b-4d99-b24c-f7ea57f876dd",
+    "code": "GEO-012",
+    "title": "Sinergia_Orgânica_(2).pdf",
+    "notes": "Foto analisada via plataforma GEONIV OSINT.",
+    "photo_url": "/uploads/file_3a4d10f41b.pdf",
+    "filename": "Sinergia_Orgânica_(2).pdf",
+    "category": "pdf",
+    "file_size": "12.32 MB",
+    "file_size_bytes": 12914931,
+    "mime_type": "application/pdf",
+    "hashes": {
+      "md5": "d6daaf0ca4fd481e083b2745e0343f61",
+      "sha256": "c831d17fda5d7297a112a860974a6b2387d0c233988e076c0d039ab720e4be3b"
+    },
+    "latitude": null,
+    "longitude": null,
+    "altitude": null,
+    "has_gps": false,
+    "is_inferred_gps": false,
+    "address": null,
+    "date_added": "2026-08-12 09:00:34",
+    "camera_info": "PDF (12 Pág)",
+    "software": null,
+    "is_edited": false,
+    "iso": null,
+    "aperture": null,
+    "focal_length": null,
+    "exposure_time": null,
+    "lens_model": null,
+    "dimensions": null,
+    "specific_metadata": {
+      "title": null,
+      "author": null,
+      "subject": null,
+      "creator": null,
+      "producer": null,
+      "creation_date": null,
+      "mod_date": null,
+      "pages_count": 12,
+      "is_encrypted": false,
+      "error": null
+    },
+    "scrubbing_analysis": null,
+    "osint_pivots": {
+      "google_lens": {
+        "name": "Google Lens",
+        "icon": "fa-brands fa-google",
+        "color": "#4285f4",
+        "url": "https://lens.google.com/",
+        "description": "Reconhecimento de objetos, texto, marcos históricos e locais."
+      },
+      "yandex_images": {
+        "name": "Yandex Visual GEOINT",
+        "icon": "fa-solid fa-eye",
+        "color": "#ff0000",
+        "url": "https://yandex.com/images/search",
+        "description": "Líder mundial em geolocalização OSINT por correspondência visual de estruturas."
+      },
+      "bing_visual": {
+        "name": "Bing Visual Search",
+        "icon": "fa-brands fa-microsoft",
+        "color": "#00838f",
+        "url": "https://www.bing.com/visualsearch",
+        "description": "Identificação de arquitetura e pesquisa visual."
+      },
+      "tineye": {
+        "name": "TinEye Reverse Search",
+        "icon": "fa-solid fa-robot",
+        "color": "#0284c7",
+        "url": "https://tineye.com/",
+        "description": "Rastreamento da versão mais antiga e sem edição da imagem na web."
+      },
+      "geospy": {
+        "name": "GeoSpy AI (GEOINT)",
+        "icon": "fa-solid fa-brain",
+        "color": "#10b981",
+        "url": "https://geospy.ai/",
+        "description": "IA especializada em prever coordenadas geográficas a partir de elementos da paisagem."
+      }
+    }
+  },
+  {
+    "id": "9b20dbf1-20a5-4510-ac63-c38dc2a856da",
+    "code": "GEO-013",
+    "title": "IMG_2265.HEIC",
+    "notes": "Foto analisada via plataforma GEONIV OSINT.",
+    "photo_url": "/uploads/img_e183aa3123.jpg",
+    "filename": "IMG_2265.HEIC",
+    "category": "image",
+    "file_size": "1.58 MB",
+    "file_size_bytes": 1658237,
+    "mime_type": "image/heic",
+    "hashes": {
+      "md5": "d3be34aef95153fe206846ab1442644d",
+      "sha256": "1374f82ab4f72902f7b481a7124e6fff37d289648c7c1f8a2a6e6bd8b3109107"
+    },
+    "latitude": -3.6794,
+    "longitude": -42.7534417,
+    "altitude": 69.1,
+    "has_gps": true,
+    "is_inferred_gps": false,
+    "address": null,
+    "date_added": "2026:08:06 11:45:20",
+    "camera_info": "Apple iPhone 11",
+    "software": "18.5",
+    "is_edited": false,
+    "iso": "250",
+    "aperture": "f/1.8",
+    "focal_length": "4.2mm",
+    "exposure_time": "0.016666666666666666s",
+    "lens_model": "iPhone 11 back dual wide camera 4.25mm f/1.8",
+    "dimensions": "3024 x 4032",
+    "specific_metadata": {
+      "has_gps": true,
+      "latitude": -3.6794,
+      "longitude": -42.7534417,
+      "altitude": 69.1,
+      "datetime": "2026:08:06 11:45:20",
+      "camera_make": "Apple",
+      "camera_model": "iPhone 11",
+      "software": "18.5",
+      "is_edited": false,
+      "iso": "250",
+      "aperture": "f/1.8",
+      "focal_length": "4.2mm",
+      "exposure_time": "0.016666666666666666s",
+      "lens_model": "iPhone 11 back dual wide camera 4.25mm f/1.8",
+      "image_width": 3024,
+      "image_height": 4032,
+      "has_exif": true,
+      "error": null
+    },
+    "scrubbing_analysis": {
+      "scrubbing_detected": false,
+      "scrubbing_source": null,
+      "explanation": null,
+      "inferred_coords": null,
+      "inferred_location_name": null,
+      "clues_found": []
+    },
+    "osint_pivots": {
+      "google_lens": {
+        "name": "Google Lens",
+        "icon": "fa-brands fa-google",
+        "color": "#4285f4",
+        "url": "https://lens.google.com/",
+        "description": "Reconhecimento de objetos, texto, marcos históricos e locais."
+      },
+      "yandex_images": {
+        "name": "Yandex Visual GEOINT",
+        "icon": "fa-solid fa-eye",
+        "color": "#ff0000",
+        "url": "https://yandex.com/images/search",
+        "description": "Líder mundial em geolocalização OSINT por correspondência visual de estruturas."
+      },
+      "bing_visual": {
+        "name": "Bing Visual Search",
+        "icon": "fa-brands fa-microsoft",
+        "color": "#00838f",
+        "url": "https://www.bing.com/visualsearch",
+        "description": "Identificação de arquitetura e pesquisa visual."
+      },
+      "tineye": {
+        "name": "TinEye Reverse Search",
+        "icon": "fa-solid fa-robot",
+        "color": "#0284c7",
+        "url": "https://tineye.com/",
+        "description": "Rastreamento da versão mais antiga e sem edição da imagem na web."
+      },
+      "geospy": {
+        "name": "GeoSpy AI (GEOINT)",
+        "icon": "fa-solid fa-brain",
+        "color": "#10b981",
+        "url": "https://geospy.ai/",
+        "description": "IA especializada em prever coordenadas geográficas a partir de elementos da paisagem."
+      }
+    }
+  },
+  {
+    "id": "e8e22085-428a-4622-9403-d11d21f747c1",
+    "code": "GEO-014",
+    "title": "1.pdf",
+    "notes": "Foto analisada via plataforma GEONIV OSINT.",
+    "photo_url": "/uploads/file_9b5dffea85.pdf",
+    "filename": "1.pdf",
+    "category": "pdf",
+    "file_size": "23.80 KB",
+    "file_size_bytes": 24374,
+    "mime_type": "application/pdf",
+    "hashes": {
+      "md5": "6ed32385c841bc3f201e3dabf9e9adb6",
+      "sha256": "8813c7d3c6a0b7ff1528e4083805c2a1f561465739abbad0e8ebbfb9bb1fb4a5"
+    },
+    "latitude": null,
+    "longitude": null,
+    "altitude": null,
+    "has_gps": false,
+    "is_inferred_gps": false,
+    "address": null,
+    "date_added": "20260810100421-03'00'",
+    "camera_info": "PDF (2 Pág)",
+    "software": null,
+    "is_edited": false,
+    "iso": null,
+    "aperture": null,
+    "focal_length": null,
+    "exposure_time": null,
+    "lens_model": null,
+    "dimensions": null,
+    "specific_metadata": {
+      "title": null,
+      "author": "Filipe Santana",
+      "subject": null,
+      "creator": "Microsoft® Word para Microsoft 365",
+      "producer": "Microsoft® Word para Microsoft 365",
+      "creation_date": "20260810100421-03'00'",
+      "mod_date": "20260810100421-03'00'",
+      "pages_count": 2,
+      "is_encrypted": false,
+      "extracted_ceps": [],
+      "inferred_coords": null,
+      "inferred_address": null,
+      "clues_found": [],
+      "error": null
+    },
+    "scrubbing_analysis": null,
+    "osint_pivots": {
+      "google_lens": {
+        "name": "Google Lens",
+        "icon": "fa-brands fa-google",
+        "color": "#4285f4",
+        "url": "https://lens.google.com/",
+        "description": "Reconhecimento de objetos, texto, marcos históricos e locais."
+      },
+      "yandex_images": {
+        "name": "Yandex Visual GEOINT",
+        "icon": "fa-solid fa-eye",
+        "color": "#ff0000",
+        "url": "https://yandex.com/images/search",
+        "description": "Líder mundial em geolocalização OSINT por correspondência visual de estruturas."
+      },
+      "bing_visual": {
+        "name": "Bing Visual Search",
+        "icon": "fa-brands fa-microsoft",
+        "color": "#00838f",
+        "url": "https://www.bing.com/visualsearch",
+        "description": "Identificação de arquitetura e pesquisa visual."
+      },
+      "tineye": {
+        "name": "TinEye Reverse Search",
+        "icon": "fa-solid fa-robot",
+        "color": "#0284c7",
+        "url": "https://tineye.com/",
+        "description": "Rastreamento da versão mais antiga e sem edição da imagem na web."
+      },
+      "geospy": {
+        "name": "GeoSpy AI (GEOINT)",
+        "icon": "fa-solid fa-brain",
+        "color": "#10b981",
+        "url": "https://geospy.ai/",
+        "description": "IA especializada em prever coordenadas geográficas a partir de elementos da paisagem."
+      }
+    }
+  }
+]

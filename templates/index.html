@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEONIV 3D - Plataforma de Inteligência OSINT & GEOINT</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Estilo Customizado GEONIV 3D -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- BARRA LATERAL (SIDEBAR OSINT) -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon glow-pulse">
+                    <i class="fa-solid fa-satellite"></i>
+                </div>
+                <div class="brand-text">
+                    <h1>GEONIV <span class="badge-3d">OSINT</span></h1>
+                    <span>Geospatial & Network Intelligence</span>
+                </div>
+            </div>
+
+            <!-- CARD DE UPLOAD DE FOTOS E MULTI-ARQUIVOS COM METADADOS -->
+            <div class="upload-section glass-panel">
+                <h3><i class="fa-solid fa-microscope"></i> Analisar Foto / PDF / Mídia Target</h3>
+                <div class="dropzone" id="dropzone">
+                    <input type="file" id="photoInput" accept="image/*,application/pdf,.pdf,.docx,.xlsx,.pptx,.mp3,.wav,.mp4,.mov,.txt" multiple hidden>
+                    <i class="fa-solid fa-cloud-arrow-up upload-icon glow-icon"></i>
+                    <p>Arraste arquivos ou <span class="browse-btn">Selecione (Foto, PDF, DOCX, Mídia)</span></p>
+                    <small><i class="fa-solid fa-shield-halved"></i> Leitura Forense EXIF/GPS, PDFs, Mídias & Hashes SHA-256</small>
+                </div>
+                <div class="dropzone-info-banner" style="margin-top: 10px; padding: 8px 10px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 8px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                    <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> <strong>Dica Forense:</strong> Fotos originais de câmera gravam GPS nativo. Fotos enviadas via WhatsApp/redes têm o GPS removido no envio. PDFs com <strong>CEPs/Endereços</strong> no texto são geolocalizados automaticamente!
+                </div>
+            </div>
+
+
+            <!-- REGISTRO RECENTE SALVO NO NAVEGADOR (LOCALSTORAGE) -->
+            <div class="history-panel glass-panel" id="localHistoryPanel">
+                <h3><i class="fa-solid fa-clock-rotate-left glow-icon"></i> Última Foto Analisada (Navegador)</h3>
+                <div id="lastUploadInfo" class="history-card">
+                    <p class="history-empty"><i class="fa-solid fa-info-circle"></i> Nenhum arquivo analisado recentemente.</p>
+                </div>
+                <div id="lastSearchInfo" class="history-search-tag">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <!-- BARRA DE FERRAMENTAS & LISTA DE ALVOS MAPEADOS -->
+            <div class="boxes-header">
+                <h3><i class="fa-solid fa-crosshairs"></i> Alvos & Mídias Mapeadas</h3>
+                <div class="export-actions">
+                    <a href="/api/export/kml" class="btn btn-sm btn-kml" title="Exportar KML para Google Earth"><i class="fa-solid fa-earth-americas"></i> KML</a>
+                    <a href="/api/export/csv" class="btn btn-sm btn-csv" title="Exportar Relatório CSV OSINT"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Buscar alvo por nome, código ou câmera...">
+            </div>
+
+            <!-- LISTAGEM DOS ALVOS -->
+            <div class="boxes-list" id="boxesList">
+                <div class="empty-state">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <p>Carregando alvos mapeados...</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL COM NAVEGAÇÃO DE ABAS OSINT -->
+        <main class="main-content">
+            <!-- NAVEGAÇÃO DE ABAS -->
+            <div class="view-tabs-bar glass-panel">
+                <div class="tabs-group">
+                    <button class="tab-btn active" data-tab="tab3D" id="tabBtn3D">
+                        <i class="fa-solid fa-cubes"></i> Digital Twin 3D
+                    </button>
+                    <button class="tab-btn" data-tab="tab2D" id="tabBtn2D">
+                        <i class="fa-solid fa-map-location-dot"></i> Mapa 2D GEOINT
+                    </button>
+                    <button class="tab-btn" data-tab="tabNetwork" id="tabBtnNetwork">
+                        <i class="fa-solid fa-network-wired"></i> Rede, IP & Telefonia
+                    </button>
+                    <button class="tab-btn" data-tab="tabGeodesic" id="tabBtnGeodesic">
+                        <i class="fa-solid fa-ruler-combined"></i> Calculador Geodésico
+                    </button>
+                    <button class="tab-btn" data-tab="tabDashboard" id="tabBtnDashboard">
+                        <i class="fa-solid fa-chart-pie"></i> Relatório OSINT
+                    </button>
+                </div>
+
+                <div class="quick-actions-bar">
+                    <button id="btnManualAdd" class="btn btn-accent glow-btn" title="Adicionar Novo Alvo Coordenado">
+                        <i class="fa-solid fa-plus-circle"></i> Novo Alvo
+                    </button>
+                </div>
+            </div>
+
+            <!-- ABA 1: DIGITAL TWIN 3D -->
+            <div class="tab-content active" id="tab3D">
+                <div class="viewport-3d-container">
+                    <div id="threeCanvasContainer" class="three-canvas"></div>
+                    
+                    <div class="hud-overlay">
+                        <div class="hud-header">
+                            <span class="hud-title" id="hudSelectedHiveCode">Visualizador Tático GEOINT 3D</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: MAPA 2D GPS -->
+            <div class="tab-content" id="tab2D">
+                <div class="map-wrapper">
+                    <div id="map"></div>
+                    <div class="map-controls">
+                        <button id="btnSatellite" class="map-mode-btn active" title="Visão por Satélite HD"><i class="fa-solid fa-satellite-dish"></i> Satélite HD</button>
+                        <button id="btnStreet" class="map-mode-btn" title="Visão por Ruas"><i class="fa-solid fa-map"></i> Ruas</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 3: INTELIGÊNCIA DE REDE, IP & INFRAESTRUTURA OSINT -->
+            <div class="tab-content" id="tabNetwork">
+                <div class="telemetry-dashboard glass-panel">
+                    <h2><i class="fa-solid fa-network-wired"></i> Geolocalizador de IP, Registros DNS & Servidores</h2>
+                    <p style="font-size: 13px; color: var(--text-secondary);">Digite um endereço IP (ex: 8.8.8.8) ou domínio para geolocalizar a infraestrutura física no mapa 3D e inspecionar registros DNS e cabeçalhos HTTP.</p>
+
+                    <!-- BUSCA DE IP / DOMÍNIO -->
+                    <div class="network-search-card glass-panel" style="padding: 20px; margin-top: 16px;">
+                        <div class="form-row">
+                            <div class="form-group col" style="flex: 3;">
+                                <label for="ipTargetInput"><i class="fa-solid fa-globe"></i> Endereço IP ou Domínio Alvo:</label>
+                                <input type="text" id="ipTargetInput" placeholder="Ex: 8.8.8.8 ou github.com" class="custom-input">
+                            </div>
+                            <div class="form-group col" style="flex: 1; display: flex; align-items: flex-end;">
+                                <button type="button" id="btnLookupIp" class="btn btn-accent glow-btn" style="width: 100%; height: 38px;">
+                                    <i class="fa-solid fa-magnifying-glass-location"></i> Investigar IP/Domínio
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- RESULTADO DA INVESTIGAÇÃO DE IP -->
+                        <div id="ipResultContainer" class="ip-result-container glass-panel" style="margin-top: 16px; display: none; padding: 16px;">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+
+                    <!-- PHONE OSINT: CONSULTA DE NÚMERO DE TELEFONE -->
+                    <div class="phone-osint-section glass-panel" style="padding: 20px; margin-top: 24px;">
+                        <h3 style="margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-mobile-screen-button" style="color: var(--accent-purple);"></i>
+                            Inteligência de Telefonia OSINT
+                        </h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Digite um número de telefone para identificar operadora, tipo de linha, região do DDD e acessar ferramentas OSINT de verificação pública.
+                        </p>
+
+                        <div class="form-row">
+                            <div class="form-group col" style="flex: 3;">
+                                <label for="phoneTargetInput"><i class="fa-solid fa-phone"></i> Número de Telefone:</label>
+                                <input type="text" id="phoneTargetInput" placeholder="Ex: (11) 98765-4321 ou +55 11 987654321" class="custom-input">
+                            </div>
+                            <div class="form-group col" style="flex: 1; display: flex; align-items: flex-end;">
+                                <button type="button" id="btnLookupPhone" class="btn btn-accent glow-btn" style="width: 100%; height: 38px;">
+                                    <i class="fa-solid fa-satellite-dish"></i> Investigar Número
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- RESULTADO DA INVESTIGAÇÃO DO TELEFONE -->
+                        <div id="phoneResultContainer" class="phone-result-container glass-panel" style="margin-top: 16px; display: none; padding: 16px;">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 4: CALCULADOR GEODÉSICO DE DISTÂNCIA & AZIMUTE -->
+            <div class="tab-content" id="tabGeodesic">
+                <div class="telemetry-dashboard glass-panel">
+                    <h2><i class="fa-solid fa-ruler-combined"></i> Calculador Geodésico de Triangulação & Distância OSINT</h2>
+                    <p style="font-size: 13px; color: var(--text-secondary);">Calcule a distância geodésica e o azimute de visada (Bearing) entre dois alvos ou pontos de imagem mapeados.</p>
+
+                    <div class="geodesic-calc-grid glass-panel" style="padding: 20px; margin-top: 16px;">
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="geoPointA"><i class="fa-solid fa-location-crosshairs"></i> Alvo A (Origem):</label>
+                                <select id="geoPointA" class="custom-select"></select>
+                            </div>
+                            <div class="form-group col">
+                                <label for="geoPointB"><i class="fa-solid fa-location-dot"></i> Alvo B (Destino):</label>
+                                <select id="geoPointB" class="custom-select"></select>
+                            </div>
+                        </div>
+
+                        <button type="button" id="btnCalculateGeodesic" class="btn btn-accent glow-btn" style="margin-top: 10px; width: 100%;">
+                            <i class="fa-solid fa-calculator"></i> Calcular Distância & Azimute
+                        </button>
+
+                        <div id="geodesicResultBox" class="geodesic-result-box glass-panel" style="margin-top: 16px; display: none;">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 5: ESTATÍSTICAS OSINT -->
+            <div class="tab-content" id="tabDashboard">
+                <div class="telemetry-dashboard glass-panel">
+                    <h2><i class="fa-solid fa-compass"></i> Painel de Geodados & Inteligência EXIF</h2>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card glass-panel">
+                            <div class="metric-icon glow-text-cyan"><i class="fa-solid fa-images"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="dashTotalBoxes">0</span>
+                                <span class="metric-lbl">Total de Alvos Mapeados</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card glass-panel">
+                            <div class="metric-icon glow-text-green"><i class="fa-solid fa-map-pin"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="dashGpsBoxes">0</span>
+                                <span class="metric-lbl">Com Coordenadas GPS</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card glass-panel">
+                            <div class="metric-icon glow-text-amber"><i class="fa-solid fa-camera"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="dashCameraCount">0</span>
+                                <span class="metric-lbl">Modelos de Câmera</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card glass-panel">
+                            <div class="metric-icon glow-text-yellow"><i class="fa-solid fa-earth-americas"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="dashKmlCount">Pronto</span>
+                                <span class="metric-lbl">Exportação KML Google Earth</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL DE DETALHES, ANÁLISE FORENSE & PIVÔS OSINT -->
+    <div class="modal-overlay" id="box3DInspectorModal">
+        <div class="modal-content modal-large glass-panel">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-shield-halved glow-icon"></i> Inspeção Forense OSINT & Pivo de Geolocalização</h2>
+                <button class="close-btn" id="closeInspectorModal">&times;</button>
+            </div>
+            <div class="modal-body inspector-grid">
+                <!-- CANVAS DO MODELO 3D INDIVIDUAL -->
+                <div class="inspector-canvas-container glass-panel">
+                    <div id="inspector3DCanvas"></div>
+                    <div class="inspector-controls-overlay">
+                        <label for="explodeSlider"><i class="fa-solid fa-up-down-left-right"></i> Vista Explodida 3D do Scanner:</label>
+                        <input type="range" id="explodeSlider" min="0" max="1" step="0.01" value="0" class="custom-slider">
+                    </div>
+                </div>
+
+                <!-- DADOS E FERRAMENTAS OSINT -->
+                <div class="inspector-details-container">
+                    <div class="gmaps-action-box glass-panel" id="modalGmapsAction">
+                        <!-- Preenchido via JS -->
+                    </div>
+
+                    <form id="boxForm" class="box-form">
+                        <input type="hidden" id="modalBoxId">
+                        
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="modalCode">Código / Tag Alvo:</label>
+                                <input type="text" id="modalCode" required class="custom-input">
+                            </div>
+                            <div class="form-group col">
+                                <label for="modalTitle">Nome do Arquivo / Servidor:</label>
+                                <input type="text" id="modalTitle" class="custom-input">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="modalLat">Latitude GPS:</label>
+                                <input type="number" step="any" id="modalLat" placeholder="-23.550520" class="custom-input">
+                            </div>
+                            <div class="form-group col">
+                                <label for="modalLng">Longitude GPS:</label>
+                                <input type="number" step="any" id="modalLng" placeholder="-46.633308" class="custom-input">
+                            </div>
+                            <div class="form-group col">
+                                <label for="modalAltitude">Altitude (m):</label>
+                                <input type="number" step="0.1" id="modalAltitude" placeholder="760.0" class="custom-input">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="modalNotes">Notas de Análise OSINT:</label>
+                            <textarea id="modalNotes" rows="2" placeholder="Observações do alvo..." class="custom-textarea"></textarea>
+                        </div>
+
+                        <!-- ENDEREÇO GEOCODIFICADO REVERSO -->
+                        <div class="address-info-box glass-panel" id="modalAddressInfo" style="margin-top: 12px; display: none; padding: 12px;">
+                            <!-- Preenchido via JS -->
+                        </div>
+
+                        <!-- METADADOS ESPECÍFICOS DO ARQUIVO -->
+                        <div class="exif-info-box glass-panel" id="modalExifInfo" style="margin-top: 12px;">
+                            <!-- Preenchido via JS -->
+                        </div>
+
+                        <!-- HASHES FORENSES -->
+                        <div class="hashes-info-box glass-panel" id="modalHashesInfo" style="margin-top: 12px; display: none; padding: 12px;">
+                            <!-- Preenchido via JS -->
+                        </div>
+
+                        <!-- PIVÔS DE BUSCA VISUAL OSINT & DESCARTE (IMAGENS SEM GPS) -->
+                        <div class="visual-osint-box glass-panel" id="modalVisualOsintPivots" style="margin-top: 12px; display: none; padding: 12px;">
+                            <!-- Preenchido via JS -->
+                        </div>
+
+                        <div class="modal-footer" style="margin-top: 16px;">
+                            <button type="button" class="btn btn-danger" id="btnDeleteBox"><i class="fa-solid fa-trash"></i> Excluir Alvo</button>
+                            <button type="submit" class="btn btn-primary glow-btn"><i class="fa-solid fa-floppy-disk"></i> Salvar Alterações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Engine 3D GEONIV -->
+    <script src="/static/three_engine.js"></script>
+    <!-- App Main Logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
