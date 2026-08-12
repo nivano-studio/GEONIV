@@ -22,20 +22,19 @@ from modules.phone_osint import phone_lookup
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Suporte ao ambiente Serverless da Vercel (sistema de arquivos read-only)
-IS_VERCEL = os.environ.get("VERCEL") == "1" or os.environ.get("VERCEL_ENV") is not None
-
-if IS_VERCEL:
-    UPLOADS_DIR = "/tmp/uploads"
-    DATA_FILE = "/tmp/geoniv_data.json"
-else:
-    UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
-    DATA_FILE = os.path.join(BASE_DIR, "geoniv_data.json")
+# Teste dinâmico de permissão de escrita para compatibilidade total com Vercel
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+DATA_FILE = os.path.join(BASE_DIR, "geoniv_data.json")
 
 try:
     os.makedirs(UPLOADS_DIR, exist_ok=True)
+    test_file = os.path.join(UPLOADS_DIR, ".write_test")
+    with open(test_file, "w") as f:
+        f.write("ok")
+    os.remove(test_file)
 except Exception:
     UPLOADS_DIR = "/tmp/uploads"
+    DATA_FILE = "/tmp/geoniv_data.json"
     os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 app = FastAPI(title="GEONIV 3D - Plataforma de Inteligência OSINT & GEOINT")
