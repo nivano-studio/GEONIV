@@ -11,5 +11,103 @@
     "date_added": "2026-08-12 11:06:33",
     "camera_info": "Operadora: Oi (Telemar)",
     "notes": "DDD 11 — São Paulo/SP. Tipo: Celular / Móvel. Operadora (prefixo): Oi (Telemar) — indicação pelo prefixo original"
+  },
+  {
+    "id": "6103610f-617f-44fb-a02e-5a943422fa44",
+    "code": "GEO-002",
+    "title": "teste.jpg",
+    "notes": "Teste de upload",
+    "photo_url": "/uploads/img_ee37f8f2d6.jpg",
+    "photo_thumbnail": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCABkAGQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD57ooor+kTxwooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//2Q==",
+    "filename": "teste.jpg",
+    "category": "image",
+    "file_size": "825 Bytes",
+    "file_size_bytes": 825,
+    "mime_type": "image/jpeg",
+    "hashes": {
+      "md5": "54e245d8b851d987ba7b66e1f2168ec2",
+      "sha256": "c70ef758da7167bdf1a2be7c4db14beab593eccb4f21042d9e1a663fdd23c641"
+    },
+    "latitude": null,
+    "longitude": null,
+    "altitude": null,
+    "has_gps": false,
+    "is_inferred_gps": false,
+    "address": null,
+    "date_added": "2026-08-14 11:43:55",
+    "camera_info": "Sem metadados EXIF",
+    "software": null,
+    "is_edited": false,
+    "iso": null,
+    "aperture": null,
+    "focal_length": null,
+    "exposure_time": null,
+    "lens_model": null,
+    "dimensions": "100 x 100",
+    "specific_metadata": {
+      "has_gps": false,
+      "latitude": null,
+      "longitude": null,
+      "altitude": null,
+      "datetime": null,
+      "camera_make": null,
+      "camera_model": null,
+      "software": null,
+      "is_edited": false,
+      "iso": null,
+      "aperture": null,
+      "focal_length": null,
+      "exposure_time": null,
+      "lens_model": null,
+      "image_width": 100,
+      "image_height": 100,
+      "has_exif": false,
+      "error": null
+    },
+    "scrubbing_analysis": {
+      "scrubbing_detected": true,
+      "scrubbing_source": "Software de Edição ou Rede Social",
+      "explanation": "Metadados EXIF ausentes. O arquivo pode ter sido exportado por editor gráfico (Photoshop, Canva) ou baixado da web.",
+      "inferred_coords": null,
+      "inferred_location_name": null,
+      "clues_found": []
+    },
+    "osint_pivots": {
+      "google_lens": {
+        "name": "Google Lens",
+        "icon": "fa-brands fa-google",
+        "color": "#4285f4",
+        "url": "https://lens.google.com/",
+        "description": "Reconhecimento de objetos, texto, marcos históricos e locais."
+      },
+      "yandex_images": {
+        "name": "Yandex Visual GEOINT",
+        "icon": "fa-solid fa-eye",
+        "color": "#ff0000",
+        "url": "https://yandex.com/images/search",
+        "description": "Líder mundial em geolocalização OSINT por correspondência visual de estruturas."
+      },
+      "bing_visual": {
+        "name": "Bing Visual Search",
+        "icon": "fa-brands fa-microsoft",
+        "color": "#00838f",
+        "url": "https://www.bing.com/visualsearch",
+        "description": "Identificação de arquitetura e pesquisa visual."
+      },
+      "tineye": {
+        "name": "TinEye Reverse Search",
+        "icon": "fa-solid fa-robot",
+        "color": "#0284c7",
+        "url": "https://tineye.com/",
+        "description": "Rastreamento da versão mais antiga e sem edição da imagem na web."
+      },
+      "geospy": {
+        "name": "GeoSpy AI (GEOINT)",
+        "icon": "fa-solid fa-brain",
+        "color": "#10b981",
+        "url": "https://geospy.ai/",
+        "description": "IA especializada em prever coordenadas geográficas a partir de elementos da paisagem."
+      }
+    }
   }
 ]

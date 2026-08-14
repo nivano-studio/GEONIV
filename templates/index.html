@@ -32,10 +32,10 @@
             <!-- CARD DE UPLOAD DE FOTOS E MULTI-ARQUIVOS COM METADADOS -->
             <div class="upload-section glass-panel">
                 <h3><i class="fa-solid fa-microscope"></i> Analisar Foto / PDF / Mídia Target</h3>
-                <div class="dropzone" id="dropzone">
-                    <input type="file" id="photoInput" accept="image/*,application/pdf,.pdf,.docx,.xlsx,.pptx,.mp3,.wav,.mp4,.mov,.txt" multiple hidden>
+                <div class="dropzone" id="dropzone" style="position: relative; overflow: hidden; cursor: pointer;">
+                    <input type="file" id="photoInput" accept="image/*,application/pdf,.pdf,.docx,.xlsx,.pptx,.mp3,.wav,.mp4,.mov,.txt" multiple style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 20;">
                     <i class="fa-solid fa-cloud-arrow-up upload-icon glow-icon"></i>
-                    <p>Arraste arquivos ou <span class="browse-btn">Selecione (Foto, PDF, DOCX, Mídia)</span></p>
+                    <p>Arraste arquivos ou <span class="browse-btn" style="color: var(--accent-cyan); font-weight: 700; text-decoration: underline;">Selecione Arquivo</span></p>
                     <small><i class="fa-solid fa-shield-halved"></i> Leitura Forense EXIF/GPS, PDFs, Mídias & Hashes SHA-256</small>
                 </div>
                 <div class="dropzone-info-banner" style="margin-top: 10px; padding: 8px 10px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 8px; font-size: 11px; color: var(--text-muted); line-height: 1.4;">
