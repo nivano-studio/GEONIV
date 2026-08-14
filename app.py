@@ -560,6 +560,29 @@ async def phone_number_lookup(phone: str, plot: bool = True):
 
     return result
 
+@app.get("/api/osint/geocode")
+async def geocode_place(query: str):
+    q = query.strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Consulta vazia.")
+    url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(q)}&format=json&limit=1"
+    headers = {"User-Agent": "GEONIV-OSINT-Intelligence/2.0 (Forensic-Geo-Engine)"}
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data and len(data) > 0:
+                item = data[0]
+                return {
+                    "success": True,
+                    "display_name": item.get("display_name"),
+                    "lat": float(item.get("lat")),
+                    "lon": float(item.get("lon"))
+                }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    return {"success": False, "error": "Nenhum local encontrado para este termo."}
+
 # --- EXPORTAÇÃO (KML E CSV) ---
 @app.get("/api/export/kml")
 async def export_kml():

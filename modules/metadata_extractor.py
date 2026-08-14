@@ -176,16 +176,25 @@ def extract_image_metadata(filepath: str) -> Dict[str, Any]:
                 lng_val = gps_info.get("GPSLongitude") or gps_info.get(4)
                 lng_ref = gps_info.get("GPSLongitudeRef") or gps_info.get(3)
 
-                if lat_val and lat_ref and lng_val and lng_ref:
+                if lat_val is not None and lng_val is not None:
                     lat = _convert_to_degrees(lat_val)
-                    if str(lat_ref).upper() != "N": lat = -lat
+                    lat_ref_str = lat_ref.decode('utf-8', errors='ignore') if isinstance(lat_ref, bytes) else str(lat_ref or '')
+                    if lat_ref_str.strip().upper() == "S":
+                        lat = -abs(lat)
+                    elif lat_ref_str.strip().upper() == "N":
+                        lat = abs(lat)
 
                     lng = _convert_to_degrees(lng_val)
-                    if str(lng_ref).upper() != "E": lng = -lng
+                    lng_ref_str = lng_ref.decode('utf-8', errors='ignore') if isinstance(lng_ref, bytes) else str(lng_ref or '')
+                    if lng_ref_str.strip().upper() == "W":
+                        lng = -abs(lng)
+                    elif lng_ref_str.strip().upper() == "E":
+                        lng = abs(lng)
 
-                    result["latitude"] = round(float(lat), 7)
-                    result["longitude"] = round(float(lng), 7)
-                    result["has_gps"] = True
+                    if lat != 0.0 or lng != 0.0:
+                        result["latitude"] = round(float(lat), 7)
+                        result["longitude"] = round(float(lng), 7)
+                        result["has_gps"] = True
 
                 alt_val = gps_info.get("GPSAltitude") or gps_info.get(6)
                 if alt_val is not None:

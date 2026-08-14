@@ -456,6 +456,50 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modalLng').value = box.longitude !== null && box.longitude !== undefined ? box.longitude : '';
         document.getElementById('modalNotes').value = box.notes || '';
 
+        // Foto vs 3D Preview
+        const imgEl = document.getElementById('inspectorPhotoImg');
+        const photoCanvas = document.getElementById('inspectorPhotoCanvas');
+        const canvas3D = document.getElementById('inspector3DCanvas');
+        const controls3D = document.getElementById('inspector3DControls');
+        const tab3D = document.getElementById('tabShow3D');
+        const tabPhoto = document.getElementById('tabShowPhoto');
+
+        const photoSrc = box.photo_thumbnail || box.photo_url;
+        if (photoSrc && imgEl && photoCanvas) {
+            imgEl.src = photoSrc;
+            tabPhoto.style.display = 'inline-flex';
+            // Se for imagem com foto válida, abre no preview da foto
+            photoCanvas.style.display = 'flex';
+            canvas3D.style.display = 'none';
+            if (controls3D) controls3D.style.display = 'none';
+            tabPhoto.classList.add('active');
+            tab3D.classList.remove('active');
+        } else {
+            tabPhoto.style.display = 'none';
+            photoCanvas.style.display = 'none';
+            canvas3D.style.display = 'block';
+            if (controls3D) controls3D.style.display = 'block';
+            tab3D.classList.add('active');
+            tabPhoto.classList.remove('active');
+        }
+
+        tab3D?.addEventListener('click', () => {
+            tab3D.classList.add('active');
+            tabPhoto.classList.remove('active');
+            canvas3D.style.display = 'block';
+            photoCanvas.style.display = 'none';
+            if (controls3D) controls3D.style.display = 'block';
+            if (engine3D) engine3D.onResize();
+        });
+
+        tabPhoto?.addEventListener('click', () => {
+            tabPhoto.classList.add('active');
+            tab3D.classList.remove('active');
+            canvas3D.style.display = 'none';
+            photoCanvas.style.display = 'flex';
+            if (controls3D) controls3D.style.display = 'none';
+        });
+
         saveUploadToLocalStorage(box);
 
         // 1. PIVÔS GEOGRÁFICOS DE MAPA (GOOGLE MAPS, STREET VIEW, SUN CALC)
@@ -513,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${explanation}
                     </p>
                     <div style="font-size: 11px; color: var(--accent-cyan); margin-top: 8px;">
-                        💡 <strong>Como geolocalizar este arquivo:</strong> Utilize a <strong>Busca Visual por IA (GeoSpy AI / Google Lens)</strong> abaixo ou insira as coordenadas/endereço manualmente.
+                        💡 <strong>Como geolocalizar este alvo:</strong> Use o campo de <strong>Busca de Local/Endereço</strong> acima, clique em qualquer ponto do <strong>Mapa 2D</strong>, ou use os botões de <strong>Busca Visual por IA</strong> abaixo!
                     </div>
                 </div>
             `;
@@ -975,27 +1019,181 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    document.getElementById('closeInspectorModal')?.addEventListener('click', () => {
+        document.getElementById('box3DInspectorModal')?.classList.remove('active');
+    });
+
+    async function triggerModalGeocode() {
+        const input = document.getElementById('modalPlaceSearch');
+        const query = input ? input.value.trim() : '';
+        if (!query) {
+            showToast('Digite uma cidade, endereço ou local para buscar.', 'warning');
+            return;
+        }
+
+        showToast(`🔍 Buscando coordenadas para: "${query}"...`, 'info');
+
+        try {
+            let data = null;
+            try {
+                const res = await fetch(`/api/osint/geocode?query=${encodeURIComponent(query)}`);
+                if (res.ok) data = await res.json();
+            } catch (e) {}
+
+            // Fallback direto via Nominatim OpenStreetMap se API local falhar
+            if (!data || !data.success) {
+                const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+                const nomList = await nominatimRes.json();
+                if (nomList && nomList.length > 0) {
+                    data = {
+                        success: true,
+                        display_name: nomList[0].display_name,
+                        lat: parseFloat(nomList[0].lat),
+                        lon: parseFloat(nomList[0].lon)
+                    };
+                }
+            }
+
+            if (data && data.success) {
+                const lat = data.lat;
+                const lng = data.lon;
+
+                document.getElementById('modalLat').value = lat;
+                document.getElementById('modalLng').value = lng;
+
+                if (selectedBox) {
+                    selectedBox.latitude = lat;
+                    selectedBox.longitude = lng;
+                    selectedBox.has_gps = true;
+                    selectedBox.is_inferred_gps = true;
+                    selectedBox.address = {
+                        success: true,
+                        display_name: data.display_name
+                    };
+                    saveUploadToLocalStorage(selectedBox);
+                    await fetchAndRenderBoxes();
+                    openBox3DInspectorModal(selectedBox);
+                }
+
+                showToast(`📍 Coordenadas fixadas: ${lat.toFixed(4)}, ${lng.toFixed(4)} (${data.display_name.split(',')[0]})!`, 'success');
+            } else {
+                showToast('❌ Nenhum local encontrado para este termo.', 'error');
+            }
+        } catch (err) {
+            console.error('Erro na geocodificação:', err);
+            showToast('❌ Erro na consulta de endereço.', 'error');
+        }
+    }
+
+    document.getElementById('btnGeocodeModal')?.addEventListener('click', triggerModalGeocode);
+    document.getElementById('modalPlaceSearch')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            triggerModalGeocode();
+        }
+    });
+
     /* =========================================================================
-       CALCULADOR GEODÉSICO DE TRIANGULAÇÃO & DISTÂNCIA
+       FERRAMENTAS DE INTELIGÊNCIA DE REDE & IP OSINT
        ========================================================================= */
-    function populateGeodesicSelects(boxes) {
+    function setupNetworkOsintTools() {
+        const btnLookup = document.getElementById('btnLookupIp');
+        const ipInput = document.getElementById('ipTargetInput');
+        const resultContainer = document.getElementById('ipResultContainer');
+
+        if (!btnLookup || !ipInput || !resultContainer) return;
+
+        btnLookup.addEventListener('click', async () => {
+            const query = ipInput.value.trim();
+            if (!query) {
+                alert('Digite um endereço IP ou domínio válido para investigar.');
+                return;
+            }
+
+            btnLookup.disabled = true;
+            btnLookup.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consultando...';
+
+            try {
+                const res = await fetch(`/api/osint/ip-lookup?target=${encodeURIComponent(query)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderIpResults(data);
+                } else {
+                    resultContainer.innerHTML = `<div class="error-msg">Erro na consulta do IP/Domínio. Verifique o alvo informado.</div>`;
+                }
+            } catch (err) {
+                console.error('Erro no IP Lookup:', err);
+                resultContainer.innerHTML = `<div class="error-msg">Falha na conexão com a API de Geolocalização de IP.</div>`;
+            } finally {
+                btnLookup.disabled = false;
+                btnLookup.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Investigar IP / Domínio';
+            }
+        });
+    }
+
+    function renderIpResults(data) {
+        const container = document.getElementById('ipResultContainer');
+        if (!container) return;
+
+        if (data.status !== 'success') {
+            container.innerHTML = `<div class="error-msg">Não foi possível geolocalizar o IP: ${data.message || 'Alvo inválido'}</div>`;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="ip-card glass-panel" style="margin-top: 14px; padding: 14px; border: 1px solid var(--accent-cyan); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 700; font-size: 14px; color: var(--accent-cyan);">🌐 ${data.query} (${data.resolved_ip || data.query})</span>
+                    <span style="font-size: 11px; background: rgba(6, 182, 212, 0.2); padding: 2px 8px; border-radius: 12px; color: #38bdf8;">${data.countryCode || 'N/A'}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 12px;">
+                    <div><strong>País:</strong> ${data.country || 'N/A'}</div>
+                    <div><strong>Região/Estado:</strong> ${data.regionName || 'N/A'}</div>
+                    <div><strong>Cidade:</strong> ${data.city || 'N/A'}</div>
+                    <div><strong>Provedor (ISP):</strong> ${data.isp || 'N/A'}</div>
+                    <div><strong>Organização:</strong> ${data.org || 'N/A'}</div>
+                    <div><strong>AS / Rota:</strong> ${data.as || 'N/A'}</div>
+                    <div><strong>Fuso Horário:</strong> ${data.timezone || 'N/A'}</div>
+                    <div><strong>Coordenadas:</strong> ${data.lat}, ${data.lon}</div>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 8px;">
+                    <button onclick="window.onFocusCoords(${data.lat}, ${data.lon})" class="btn btn-sm btn-primary" style="flex: 1;">
+                        <i class="fa-solid fa-map-pin"></i> Ver no Mapa
+                    </button>
+                    <a href="https://www.shodan.io/host/${data.query}" target="_blank" class="btn btn-sm btn-dark" style="text-align: center; text-decoration: none;">
+                        <i class="fa-solid fa-satellite-dish"></i> Shodan OSINT
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+
+    window.onFocusCoords = (lat, lon) => {
+        focusOnLocation(lat, lon);
+    };
+
+    /* =========================================================================
+       CALCULADORA GEODÉSICA DE DISTÂNCIA & VISADA
+       ========================================================================= */
+    function populateGeodesicDropdowns(boxes) {
         const selectA = document.getElementById('geoPointA');
         const selectB = document.getElementById('geoPointB');
+
         if (!selectA || !selectB) return;
 
         selectA.innerHTML = '';
         selectB.innerHTML = '';
 
-        const validBoxes = boxes.filter(b => b.latitude !== null && b.latitude !== undefined && b.longitude !== null && b.longitude !== undefined);
+        const withCoords = boxes.filter(b => b.latitude !== null && b.latitude !== undefined && b.longitude !== null && b.longitude !== undefined);
 
-        if (validBoxes.length < 2) {
-            selectA.innerHTML = '<option value="">São necessários pelo menos 2 alvos com GPS</option>';
-            selectB.innerHTML = '<option value="">Adicione fotos geolocalizadas ou IPs</option>';
+        if (withCoords.length === 0) {
+            selectA.innerHTML = '<option value="">Nenhum alvo com GPS cadastrado</option>';
+            selectB.innerHTML = '<option value="">Nenhum alvo com GPS cadastrado</option>';
             return;
         }
 
-        validBoxes.forEach((b, i) => {
-            const title = `${b.code} - ${b.filename || b.title} (${Number(b.latitude).toFixed(4)}, ${Number(b.longitude).toFixed(4)})`;
+        withCoords.forEach((b, i) => {
+            const title = `${b.code} - ${b.filename || b.title || 'Alvo'}`;
             const optA = document.createElement('option');
             optA.value = b.id;
             optA.innerText = title;
@@ -1158,12 +1356,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Extração Client-Side Instantânea de Metadados EXIF/GPS (exifr)
             if (window.exifr && file.type.startsWith('image/')) {
                 try {
-                    const exifData = await window.exifr.parse(file, true);
+                    const gpsData = await window.exifr.gps(file).catch(() => null);
+                    if (gpsData && gpsData.latitude !== undefined && gpsData.longitude !== undefined) {
+                        clientLat = Number(gpsData.latitude);
+                        clientLng = Number(gpsData.longitude);
+                        clientAlt = Number(gpsData.altitude || 0);
+                    }
+                    const exifData = await window.exifr.parse(file).catch(() => null);
                     if (exifData) {
-                        if (exifData.latitude !== undefined && exifData.longitude !== undefined) {
+                        if (clientLat === null && exifData.latitude !== undefined && exifData.longitude !== undefined) {
                             clientLat = Number(exifData.latitude);
                             clientLng = Number(exifData.longitude);
-                            clientAlt = exifData.altitude || 0;
+                            clientAlt = Number(exifData.altitude || 0);
                         }
                         if (exifData.Make || exifData.Model) {
                             clientCamera = `${exifData.Make || ''} ${exifData.Model || ''}`.trim();
@@ -1194,6 +1398,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 latitude: clientLat,
                 longitude: clientLng,
                 altitude: clientAlt,
+                has_gps: clientLat !== null && clientLng !== null,
                 camera_info: clientCamera,
                 date_added: clientDate,
                 software: clientSoftware,
@@ -1206,6 +1411,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
+            // Geocodificação reversa client-side se GPS presente
+            if (clientLat !== null && clientLng !== null) {
+                try {
+                    const nomRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${clientLat}&lon=${clientLng}&format=json`).catch(() => null);
+                    if (nomRes && nomRes.ok) {
+                        const nomData = await nomRes.json();
+                        localBox.address = {
+                            success: true,
+                            display_name: nomData.display_name,
+                            road: nomData.address?.road,
+                            suburb: nomData.address?.suburb || nomData.address?.neighbourhood,
+                            city: nomData.address?.city || nomData.address?.town,
+                            state: nomData.address?.state,
+                            country: nomData.address?.country,
+                            postcode: nomData.address?.postcode
+                        };
+                    }
+                } catch (e) {}
+            }
+
             // Salva instantaneamente no localStorage e atualiza estado
             saveUploadToLocalStorage(localBox);
             await fetchAndRenderBoxes();
@@ -1214,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`📍 GPS detectado: ${clientLat.toFixed(4)}, ${clientLng.toFixed(4)} (${clientCamera})`, 'success');
                 focusOnLocation(clientLat, clientLng);
             } else {
-                showToast(`⚠️ Arquivo sem GPS nativo. Abrindo ferramentas de localização visual (GeoSpy / Lens / Yandex)!`, 'warning');
+                showToast(`⚠️ Imagem sem GPS EXIF. Use o buscador de cidades ou os botões de busca por IA!`, 'warning');
             }
 
             setTimeout(() => openBox3DInspectorModal(localBox), 200);
@@ -1230,8 +1455,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }).then(async (res) => {
                 if (res.ok) {
                     const serverBox = await res.json();
-                    saveUploadToLocalStorage(serverBox);
-                    await fetchAndRenderBoxes();
+                    if (serverBox && serverBox.latitude !== null) {
+                        localBox.latitude = serverBox.latitude;
+                        localBox.longitude = serverBox.longitude;
+                        localBox.altitude = serverBox.altitude;
+                        localBox.has_gps = true;
+                        localBox.address = serverBox.address;
+                        saveUploadToLocalStorage(localBox);
+                        await fetchAndRenderBoxes();
+                    }
                 }
             }).catch((err) => {
                 console.warn('Sync com servidor backend opcional:', err);
