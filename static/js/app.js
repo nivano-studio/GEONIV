@@ -85,138 +85,203 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnStreet.classList.remove('active');
             });
 
-            btnStreet?.addEventListener('click', () => {
-                map2D.removeLayer(satelliteLayer);
-                streetLayer.addTo(map2D);
-                btnStreet.classList.add('active');
-                btnSat.classList.remove('active');
+            map2D.on('click', (e) => {
+                const clickedLat = e.latlng.lat;
+                const clickedLng = e.latlng.lng;
+
+                if (selectedBox) {
+                    selectedBox.latitude = clickedLat;
+                    selectedBox.longitude = clickedLng;
+                    selectedBox.is_inferred_gps = true;
+                    saveUploadToLocalStorage(selectedBox);
+                    fetchAndRenderBoxes();
+                    showToast(`📍 Ponto fixado no mapa: ${clickedLat.toFixed(4)}, ${clickedLng.toFixed(4)} para ${selectedBox.code}!`, 'success');
+                } else {
+                    showToast(`💡 Coordenadas clicadas: ${clickedLat.toFixed(5)}, ${clickedLng.toFixed(5)}`, 'info');
+                }
             });
         } catch (e) {
             console.warn('Erro ao inicializar Leaflet:', e);
         }
     }
 
-    /* =========================================================================
-       HISTÓRICO SALVO NO NAVEGADOR (LOCALSTORAGE)
-       ========================================================================= */
-    function saveUploadToLocalStorage(fileData) {
-        try {
-            const record = {
-                filename: fileData.filename || fileData.title || 'Imagem enviada',
-                code: fileData.code || 'GEO-001',
-                date: fileData.date_added || new Date().toLocaleString(),
-                latitude: fileData.latitude,
-                longitude: fileData.longitude,
-                camera_info: fileData.camera_info || 'Não informada',
-                software: fileData.software,
-                photo_thumbnail: fileData.photo_thumbnail,
-                timestamp: new Date().getTime()
-            };
-            localStorage.setItem('geoniv_last_upload', JSON.stringify(record));
-            renderLocalStorageHistory();
-        } catch (e) {
-            console.warn('Erro ao salvar no localStorage:', e);
-        }
-    }
+    /* ===================================================================        /* =========================================================================
+           TOAST NOTIFICATIONS (FEEDBACK VISUAL INSTANTÂNEO)
+           ========================================================================= */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
 
-    function saveSearchToLocalStorage(query) {
-        try {
-            if (query && query.trim() !== '') {
-                localStorage.setItem('geoniv_last_search', query.trim());
-                renderLocalStorageHistory();
-            }
-        } catch (e) {
-            console.warn('Erro ao salvar busca no localStorage:', e);
-        }
-    }
-
-    function renderLocalStorageHistory() {
-        const infoContainer = document.getElementById('lastUploadInfo');
-        const searchContainer = document.getElementById('lastSearchInfo');
-        if (!infoContainer) return;
-
-        const rawUpload = localStorage.getItem('geoniv_last_upload');
-        if (rawUpload) {
-            try {
-                const upload = JSON.parse(rawUpload);
-                const hasGps = upload.latitude && upload.longitude;
-                const gmapsUrl = hasGps ? `https://www.google.com/maps?q=${upload.latitude},${upload.longitude}` : '#';
-
-                infoContainer.innerHTML = `
-                    <div class="history-item-row">
-                        <span>Arquivo:</span>
-                        <span class="history-filename">${upload.filename}</span>
-                    </div>
-                    <div class="history-item-row">
-                        <span>Código:</span>
-                        <strong>${upload.code}</strong>
-                    </div>
-                    <div class="history-item-row">
-                        <span>Câmera:</span>
-                        <span>${upload.camera_info}</span>
-                    </div>
-                    <div class="history-item-row">
-                        <span>Data:</span>
-                        <span>${upload.date}</span>
-                    </div>
-                    ${hasGps ? `
-                    <div style="margin-top: 6px;">
-                        <a href="${gmapsUrl}" target="_blank" class="btn-gmaps-mini" style="display: inline-flex; width: 100%; justify-content: center;">
-                            📍 Ver no Google Maps (${Number(upload.latitude).toFixed(4)}, ${Number(upload.longitude).toFixed(4)})
-                        </a>
-                    </div>
-                    ` : '<div style="margin-top: 4px; color: var(--accent-amber); font-size: 11px;">Sem GPS EXIF no arquivo</div>'}
-                `;
-            } catch (e) {
-                infoContainer.innerHTML = `<p class="history-empty"><i class="fa-solid fa-info-circle"></i> Nenhum registro recente salvo.</p>`;
-            }
-        } else {
-            infoContainer.innerHTML = `<p class="history-empty"><i class="fa-solid fa-info-circle"></i> Nenhum upload recente salvo no navegador.</p>`;
-        }
-
-        const lastSearch = localStorage.getItem('geoniv_last_search');
-        if (searchContainer) {
-            if (lastSearch) {
-                searchContainer.innerHTML = `
-                    <div style="margin-top: 6px; font-size: 11px;">
-                        <span>Última Pesquisa:</span> <span class="search-badge">${lastSearch}</span>
-                    </div>
-                `;
-            } else {
-                searchContainer.innerHTML = '';
-            }
-        }
-    }
-
-    /* =========================================================================
-       CARREGAR E RENDERIZAR ALVOS
-       ========================================================================= */
-    async function fetchAndRenderBoxes() {
-        try {
-            const response = await fetch('/api/boxes');
-            if (!response.ok) throw new Error('Falha ao carregar registros');
+            const toast = document.createElement('div');
+            toast.className = `toast-msg toast-${type}`;
             
-            boxesData = await response.json();
+            let icon = 'fa-info-circle';
+            if (type === 'success') icon = 'fa-circle-check';
+            if (type === 'warning') icon = 'fa-triangle-exclamation';
+            if (type === 'error') icon = 'fa-circle-xmark';
+
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
+
+        /* =========================================================================
+           HISTÓRICO SALVO NO NAVEGADOR (LOCALSTORAGE & ZERO-DATABASE)
+           ========================================================================= */
+        function getLocalCustomRecords() {
+            try {
+                const raw = localStorage.getItem('geoniv_custom_records');
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveLocalCustomRecord(record) {
+            try {
+                const list = getLocalCustomRecords();
+                const existingIdx = list.findIndex(r => r.id === record.id);
+                if (existingIdx >= 0) {
+                    list[existingIdx] = record;
+                } else {
+                    list.unshift(record);
+                }
+                localStorage.setItem('geoniv_custom_records', JSON.stringify(list));
+            } catch (e) {
+                console.warn('Erro ao salvar registro local:', e);
+            }
+        }
+
+        function saveUploadToLocalStorage(fileData) {
+            try {
+                const record = {
+                    id: fileData.id,
+                    filename: fileData.filename || fileData.title || 'Imagem enviada',
+                    code: fileData.code || 'GEO-001',
+                    date: fileData.date_added || new Date().toLocaleString(),
+                    latitude: fileData.latitude,
+                    longitude: fileData.longitude,
+                    camera_info: fileData.camera_info || 'Não informada',
+                    software: fileData.software,
+                    photo_thumbnail: fileData.photo_thumbnail,
+                    timestamp: new Date().getTime()
+                };
+                localStorage.setItem('geoniv_last_upload', JSON.stringify(record));
+                saveLocalCustomRecord(fileData);
+                renderLocalStorageHistory();
+            } catch (e) {
+                console.warn('Erro ao salvar no localStorage:', e);
+            }
+        }
+
+        function saveSearchToLocalStorage(query) {
+            try {
+                if (query && query.trim() !== '') {
+                    localStorage.setItem('geoniv_last_search', query.trim());
+                    renderLocalStorageHistory();
+                }
+            } catch (e) {
+                console.warn('Erro ao salvar busca no localStorage:', e);
+            }
+        }
+
+        function renderLocalStorageHistory() {
+            const infoContainer = document.getElementById('lastUploadInfo');
+            const searchContainer = document.getElementById('lastSearchInfo');
+            if (!infoContainer) return;
+
+            const rawUpload = localStorage.getItem('geoniv_last_upload');
+            if (rawUpload) {
+                try {
+                    const upload = JSON.parse(rawUpload);
+                    const hasGps = upload.latitude && upload.longitude;
+                    const gmapsUrl = hasGps ? `https://www.google.com/maps?q=${upload.latitude},${upload.longitude}` : '#';
+
+                    infoContainer.innerHTML = `
+                        <div class="history-item-row">
+                            <span>Arquivo:</span>
+                            <span class="history-filename">${upload.filename}</span>
+                        </div>
+                        <div class="history-item-row">
+                            <span>Código:</span>
+                            <strong>${upload.code}</strong>
+                        </div>
+                        <div class="history-item-row">
+                            <span>Câmera:</span>
+                            <span>${upload.camera_info}</span>
+                        </div>
+                        <div class="history-item-row">
+                            <span>Data:</span>
+                            <span>${upload.date}</span>
+                        </div>
+                        ${hasGps ? `
+                        <div style="margin-top: 6px;">
+                            <a href="${gmapsUrl}" target="_blank" class="btn-gmaps-mini" style="display: inline-flex; width: 100%; justify-content: center;">
+                                📍 Ver no Google Maps (${Number(upload.latitude).toFixed(4)}, ${Number(upload.longitude).toFixed(4)})
+                            </a>
+                        </div>
+                        ` : '<div style="margin-top: 4px; color: var(--accent-amber); font-size: 11px;">Sem GPS EXIF no arquivo</div>'}
+                    `;
+                } catch (e) {
+                    infoContainer.innerHTML = `<p class="history-empty"><i class="fa-solid fa-info-circle"></i> Nenhum registro recente salvo.</p>`;
+                }
+            } else {
+                infoContainer.innerHTML = `<p class="history-empty"><i class="fa-solid fa-info-circle"></i> Nenhum upload recente salvo no navegador.</p>`;
+            }
+
+            const lastSearch = localStorage.getItem('geoniv_last_search');
+            if (searchContainer) {
+                if (lastSearch) {
+                    searchContainer.innerHTML = `
+                        <div style="margin-top: 6px; font-size: 11px;">
+                            <span>Última Pesquisa:</span> <span class="search-badge">${lastSearch}</span>
+                        </div>
+                    `;
+                } else {
+                    searchContainer.innerHTML = '';
+                }
+            }
+        }
+
+        /* =========================================================================
+           CARREGAR E RENDERIZAR ALVOS (COMBINA SERVIDOR + LOCALSTORAGE)
+           ========================================================================= */
+        async function fetchAndRenderBoxes() {
+            let serverRecords = [];
+            try {
+                const response = await fetch('/api/boxes');
+                if (response.ok) {
+                    serverRecords = await response.json();
+                }
+            } catch (error) {
+                console.warn('Servidor offline ou sem resposta, usando dados locais:', error);
+            }
+
+            const localRecords = getLocalCustomRecords();
+            
+            // Mesclar evitando duplicados por ID
+            const mergedMap = new Map();
+            localRecords.forEach(r => mergedMap.set(r.id, r));
+            serverRecords.forEach(r => {
+                if (!mergedMap.has(r.id)) {
+                    mergedMap.set(r.id, r);
+                }
+            });
+
+            boxesData = Array.from(mergedMap.values());
 
             renderBoxesList(boxesData);
             renderBoxes2DMap(boxesData);
             if (engine3D) engine3D.renderBoxesIn3DTerrain(boxesData);
             updateDashboardMetrics(boxesData);
             populateGeodesicSelects(boxesData);
-
-        } catch (error) {
-            console.error('Erro ao buscar registros:', error);
-            const listContainer = document.getElementById('boxesList');
-            if (listContainer && listContainer.innerHTML.includes('Carregando')) {
-                listContainer.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa-solid fa-folder-open" style="font-size: 32px; color: var(--text-muted); margin-bottom: 8px;"></i>
-                        <p>Nenhum alvo cadastrado ainda.</p>
-                    </div>
-                `;
-            }
         }
-    }
 
     function renderBoxesList(boxes) {
         const listContainer = document.getElementById('boxesList');
@@ -1047,27 +1112,127 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handlePhotoUpload(files) {
+        const dropzone = document.getElementById('dropzone');
+        dropzone?.classList.add('processing');
+
         for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            showToast(`🔬 Processando arquivo: ${file.name}...`, 'info');
+
+            let clientLat = null;
+            let clientLng = null;
+            let clientAlt = null;
+            let clientCamera = 'Não informada';
+            let clientSoftware = null;
+            let clientDate = new Date().toLocaleString();
+            let thumbnailBase64 = null;
+            let sha256Hash = null;
+
+            // 1. Calcular Hash SHA-256 no Navegador via Web Crypto
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                sha256Hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) {
+                console.warn('Erro ao gerar SHA-256 no cliente:', e);
+            }
+
+            // 2. Gerar Thumbnail DataURL no Navegador
+            if (file.type.startsWith('image/')) {
+                try {
+                    thumbnailBase64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                } catch (e) {}
+            }
+
+            // 3. Extração Client-Side Instantânea de Metadados EXIF/GPS (exifr)
+            if (window.exifr && file.type.startsWith('image/')) {
+                try {
+                    const exifData = await window.exifr.parse(file, true);
+                    if (exifData) {
+                        if (exifData.latitude !== undefined && exifData.longitude !== undefined) {
+                            clientLat = Number(exifData.latitude);
+                            clientLng = Number(exifData.longitude);
+                            clientAlt = exifData.altitude || 0;
+                        }
+                        if (exifData.Make || exifData.Model) {
+                            clientCamera = `${exifData.Make || ''} ${exifData.Model || ''}`.trim();
+                        }
+                        if (exifData.Software) {
+                            clientSoftware = exifData.Software;
+                        }
+                        if (exifData.DateTimeOriginal) {
+                            clientDate = new Date(exifData.DateTimeOriginal).toLocaleString();
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Leitura EXIF local:', err);
+                }
+            }
+
+            const uniqueId = 'local_' + Math.random().toString(36).substr(2, 9);
+            const nextCode = `GEO-${String(boxesData.length + 1).padStart(3, '0')}`;
+
+            const localBox = {
+                id: uniqueId,
+                code: nextCode,
+                title: file.name,
+                filename: file.name,
+                notes: 'Arquivo analisado via plataforma GEONIV OSINT.',
+                photo_url: thumbnailBase64 || '',
+                photo_thumbnail: thumbnailBase64,
+                latitude: clientLat,
+                longitude: clientLng,
+                altitude: clientAlt,
+                camera_info: clientCamera,
+                date_added: clientDate,
+                software: clientSoftware,
+                category: file.type.startsWith('image/') ? 'image' : (file.name.endsWith('.pdf') ? 'pdf' : 'document'),
+                hashes: { sha256: sha256Hash },
+                scrubbing_analysis: {
+                    scrubbing_detected: clientLat === null && file.type.startsWith('image/'),
+                    scrubbing_source: file.name.includes('WA') ? 'WhatsApp / Mensageiro' : 'Compressão / Web',
+                    explanation: clientLat === null ? 'Esta imagem não contém coordenadas de satélite no EXIF (comum em fotos baixadas da web ou recebidas por redes sociais).' : ''
+                }
+            };
+
+            // Salva instantaneamente no localStorage e atualiza estado
+            saveUploadToLocalStorage(localBox);
+            await fetchAndRenderBoxes();
+
+            if (clientLat !== null && clientLng !== null) {
+                showToast(`📍 GPS detectado: ${clientLat.toFixed(4)}, ${clientLng.toFixed(4)} (${clientCamera})`, 'success');
+                focusOnLocation(clientLat, clientLng);
+            } else {
+                showToast(`⚠️ Arquivo sem GPS nativo. Abrindo ferramentas de localização visual (GeoSpy / Lens / Yandex)!`, 'warning');
+            }
+
+            setTimeout(() => openBox3DInspectorModal(localBox), 200);
+
+            // 4. Sincronização em Segundo Plano com o Backend
             const formData = new FormData();
-            formData.append('file', files[i]);
+            formData.append('file', file);
             formData.append('notes', 'Foto analisada via plataforma GEONIV OSINT.');
 
-            try {
-                const res = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            }).then(async (res) => {
                 if (res.ok) {
-                    const uploadedBox = await res.json();
-                    saveUploadToLocalStorage(uploadedBox);
-                    setTimeout(() => openBox3DInspectorModal(uploadedBox), 300);
+                    const serverBox = await res.json();
+                    saveUploadToLocalStorage(serverBox);
+                    await fetchAndRenderBoxes();
                 }
-            } catch (err) {
-                console.error('Erro ao enviar foto:', err);
-            }
+            }).catch((err) => {
+                console.warn('Sync com servidor backend opcional:', err);
+            });
         }
 
-        await fetchAndRenderBoxes();
+        dropzone?.classList.remove('processing');
     }
 
     /* =========================================================================
