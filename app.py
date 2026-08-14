@@ -74,21 +74,47 @@ async def global_exception_handler(request: Request, exc: Exception):
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 
-if os.path.exists(STATIC_DIR):
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+import mimetypes
+
+@app.get("/static/{file_path:path}")
+async def serve_static_file(file_path: str):
+    candidate_dirs = [
+        STATIC_DIR,
+        os.path.join(BASE_DIR, "static"),
+        os.path.join(os.getcwd(), "static"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "static"),
+        "static"
+    ]
+    for cdir in candidate_dirs:
+        full_path = os.path.join(cdir, file_path)
+        if os.path.exists(full_path) and os.path.isfile(full_path):
+            mime, _ = mimetypes.guess_type(full_path)
+            if not mime:
+                if file_path.endswith('.css'):
+                    mime = 'text/css'
+                elif file_path.endswith('.js'):
+                    mime = 'application/javascript'
+                elif file_path.endswith('.png'):
+                    mime = 'image/png'
+                elif file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
+                    mime = 'image/jpeg'
+                elif file_path.endswith('.svg'):
+                    mime = 'image/svg+xml'
+                else:
+                    mime = 'application/octet-stream'
+            with open(full_path, "rb") as f:
+                return Response(
+                    content=f.read(),
+                    media_type=mime,
+                    headers={"Cache-Control": "public, max-age=86400"}
+                )
+    raise HTTPException(status_code=404, detail=f"Arquivo estático não encontrado: {file_path}")
 
 if os.path.exists(UPLOADS_DIR):
-    app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
-
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
-
-# Fallback direto para arquivos estáticos no Vercel caso o middleware de mount falhe
-@app.get("/static/{file_path:path}")
-async def serve_static_fallback(file_path: str):
-    full_path = os.path.join(STATIC_DIR, file_path)
-    if os.path.exists(full_path) and os.path.isfile(full_path):
-        return FileResponse(full_path)
-    raise HTTPException(status_code=404, detail="Arquivo estático não encontrado.")
+    try:
+        app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+    except Exception:
+        pass
 
 # --- GERENCIAMENTO DE DADOS COM SUPORTE A READ-ONLY E SERVERLESS ---
 _IN_MEMORY_RECORDS: List[Dict[str, Any]] = []
