@@ -15,12 +15,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Estilo Customizado GEONIV 3D -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Estilo Customizado GEONIV 3D (com Cache-Buster) -->
+    <link rel="stylesheet" href="/static/css/style.css?v=2.2">
 </head>
 <body class="dark-theme">
     <!-- CABEÇALHO MOBILE EXCLUSIVO PARA SMARTPHONES -->
-    <header class="mobile-header">
+    <header class="mobile-header" style="display: none;">
         <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir Lista de Alvos">
             <i class="fa-solid fa-bars-staggered"></i>
             <span class="mobile-target-badge" id="mobileTargetBadge">0</span>
@@ -38,7 +38,7 @@
     </header>
 
     <!-- OVERLAY DE BACKDROP DO SIDEBAR NO MOBILE -->
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" style="display: none;"></div>
 
     <div class="app-container">
         <!-- BARRA LATERAL (SIDEBAR OSINT) -->
@@ -53,7 +53,7 @@
                         <span>Geospatial & Network Intelligence</span>
                     </div>
                 </div>
-                <button type="button" class="sidebar-close-btn" id="closeSidebarBtn" aria-label="Fechar Gaveta">&times;</button>
+                <button type="button" class="sidebar-close-btn" id="closeSidebarBtn" aria-label="Fechar Gaveta" style="display: none;">&times;</button>
             </div>
 
             <!-- CARD DE UPLOAD DE FOTOS E MULTI-ARQUIVOS COM METADADOS -->
@@ -872,7 +872,7 @@
     </div>
 
     <!-- BARRA DE NAVEGAÇÃO INFERIOR MOBILE (THUMB ZONE) -->
-    <nav class="mobile-bottom-nav">
+    <nav class="mobile-bottom-nav" style="display: none;">
         <button type="button" class="mobile-nav-item" id="mobileNavTargets">
             <i class="fa-solid fa-crosshairs"></i>
             <span>Alvos</span>
@@ -896,7 +896,7 @@
     </nav>
 
     <!-- MENU MODAL DE FERRAMENTAS EXTRAS NO MOBILE -->
-    <div class="mobile-tools-sheet" id="mobileToolsSheet">
+    <div class="mobile-tools-sheet" id="mobileToolsSheet" style="display: none;">
         <div class="mobile-tools-content glass-panel">
             <div class="mobile-tools-header">
                 <h3><i class="fa-solid fa-screwdriver-wrench glow-icon"></i> Módulos & Ferramentas OSINT</h3>
@@ -934,9 +934,9 @@
     <!-- EXIFR: Client-side Instant EXIF/GPS Extractor (Zero Database / Zero Latency) -->
     <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
     <!-- Engine 3D GEONIV -->
-    <script src="/static/js/three_engine.js"></script>
+    <script src="/static/js/three_engine.js?v=2.2"></script>
     <!-- App Main Logic -->
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=2.2"></script>
 
 </body>
 </html>

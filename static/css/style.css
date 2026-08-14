@@ -1523,13 +1523,13 @@ body.dark-theme {
 .mobile-tools-sheet,
 .sidebar-backdrop,
 .sidebar-close-btn {
-    display: none;
+    display: none !important;
 }
 
 @media (max-width: 768px) {
     /* 1. Header Mobile Fixo Superior */
     .mobile-header {
-        display: flex;
+        display: flex !important;
         position: fixed;
         top: 0;
         left: 0;
@@ -1606,7 +1606,7 @@ body.dark-theme {
 
     /* 2. Backdrop Overlay do Drawer */
     .sidebar-backdrop {
-        display: block;
+        display: block !important;
         position: fixed;
         top: 0;
         left: 0;
@@ -1657,7 +1657,7 @@ body.dark-theme {
     }
 
     .sidebar-close-btn {
-        display: flex;
+        display: flex !important;
         align-items: center;
         justify-content: center;
         width: 36px;
@@ -1690,7 +1690,7 @@ body.dark-theme {
 
     /* Esconde as abas superiores no mobile (substituídas pela barra inferior) */
     .nav-tabs {
-        display: none;
+        display: none !important;
     }
 
     .tab-content {
@@ -1702,7 +1702,7 @@ body.dark-theme {
 
     /* 5. Barra Inferior Fixa (Thumb Zone) */
     .mobile-bottom-nav {
-        display: flex;
+        display: flex !important;
         position: fixed;
         bottom: 0;
         left: 0;
@@ -1750,7 +1750,7 @@ body.dark-theme {
 
     /* 6. Sheet de Ferramentas Extras */
     .mobile-tools-sheet {
-        display: block;
+        display: block !important;
         position: fixed;
         bottom: 0;
         left: 0;
