@@ -105,10 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /* ===================================================================        /* =========================================================================
-           TOAST NOTIFICATIONS (FEEDBACK VISUAL INSTANTÂNEO)
-           ========================================================================= */
-        function showToast(message, type = 'info') {
+    /* =========================================================================
+       TOAST NOTIFICATIONS (FEEDBACK VISUAL INSTANTÂNEO)
+       ========================================================================= */
+    function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
             if (!container) return;
 
