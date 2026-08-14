@@ -140,7 +140,17 @@ def generate_next_code(records: list) -> str:
 @app.get("/api/index", response_class=HTMLResponse)
 @app.get("/api/index.py", response_class=HTMLResponse)
 async def read_index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    candidate_paths = [
+        os.path.join(TEMPLATES_DIR, "index.html"),
+        os.path.join(BASE_DIR, "templates", "index.html"),
+        os.path.join(os.getcwd(), "templates", "index.html"),
+        "templates/index.html"
+    ]
+    for p in candidate_paths:
+        if os.path.exists(p) and os.path.isfile(p):
+            with open(p, "r", encoding="utf-8") as f:
+                return HTMLResponse(content=f.read(), status_code=200)
+    return HTMLResponse(content="<h1>GEONIV 3D - Plataforma Online</h1>", status_code=200)
 
 @app.get("/api/health")
 async def health_check():
