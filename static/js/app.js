@@ -13,10 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Inicializar Motor 3D Three.js
     if (window.Geoniv3DEngine) {
-        engine3D = new window.Geoniv3DEngine('threeCanvasContainer');
-        window.onSelectBoxFrom3D = (boxData) => {
-            openBox3DInspectorModal(boxData);
-        };
+        try {
+            engine3D = new window.Geoniv3DEngine('threeCanvasContainer');
+            window.onSelectBoxFrom3D = (boxData) => {
+                openBox3DInspectorModal(boxData);
+            };
+        } catch (e) {
+            console.warn('Erro ao inicializar Three.js Engine:', e);
+        }
     }
 
     // 2. Inicializar Mapa 2D Leaflet
@@ -33,55 +37,63 @@ document.addEventListener('DOMContentLoaded', () => {
     setupGeodesicCalculator();
     setupNetworkOsintTools();
     setupPhoneOsintTools();
+    setupOsintHub();
 
     // 5. Carregar Registros OSINT via API
     fetchAndRenderBoxes();
 
     /* =========================================================================
-       MAPA LEAFLET 2D (ZOOM CORRIGIDO)
+       MAPA LEAFLET 2D
        ========================================================================= */
     function initLeaflet2DMap() {
+        const mapEl = document.getElementById('map');
+        if (!mapEl) return;
+
         const defaultLat = -23.55052;
         const defaultLng = -46.633308;
 
-        map2D = L.map('map', { 
-            zoomControl: false,
-            maxZoom: 21
-        }).setView([defaultLat, defaultLng], 16);
-        
-        L.control.zoom({ position: 'topleft' }).addTo(map2D);
+        try {
+            map2D = L.map('map', { 
+                zoomControl: false,
+                maxZoom: 21
+            }).setView([defaultLat, defaultLng], 16);
+            
+            L.control.zoom({ position: 'topleft' }).addTo(map2D);
 
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 21,
-            maxNativeZoom: 18,
-            attribution: 'Esri Satellite HD'
-        });
+            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 21,
+                maxNativeZoom: 18,
+                attribution: 'Esri Satellite HD'
+            });
 
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 21,
-            maxNativeZoom: 19,
-            attribution: 'OpenStreetMap'
-        });
+            const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 21,
+                maxNativeZoom: 19,
+                attribution: 'OpenStreetMap'
+            });
 
-        satelliteLayer.addTo(map2D);
-        markersGroup2D = L.layerGroup().addTo(map2D);
-
-        const btnSat = document.getElementById('btnSatellite');
-        const btnStreet = document.getElementById('btnStreet');
-
-        btnSat?.addEventListener('click', () => {
-            map2D.removeLayer(streetLayer);
             satelliteLayer.addTo(map2D);
-            btnSat.classList.add('active');
-            btnStreet.classList.remove('active');
-        });
+            markersGroup2D = L.layerGroup().addTo(map2D);
 
-        btnStreet?.addEventListener('click', () => {
-            map2D.removeLayer(satelliteLayer);
-            streetLayer.addTo(map2D);
-            btnStreet.classList.add('active');
-            btnSat.classList.remove('active');
-        });
+            const btnSat = document.getElementById('btnSatellite');
+            const btnStreet = document.getElementById('btnStreet');
+
+            btnSat?.addEventListener('click', () => {
+                map2D.removeLayer(streetLayer);
+                satelliteLayer.addTo(map2D);
+                btnSat.classList.add('active');
+                btnStreet.classList.remove('active');
+            });
+
+            btnStreet?.addEventListener('click', () => {
+                map2D.removeLayer(satelliteLayer);
+                streetLayer.addTo(map2D);
+                btnStreet.classList.add('active');
+                btnSat.classList.remove('active');
+            });
+        } catch (e) {
+            console.warn('Erro ao inicializar Leaflet:', e);
+        }
     }
 
     /* =========================================================================
@@ -97,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 longitude: fileData.longitude,
                 camera_info: fileData.camera_info || 'Não informada',
                 software: fileData.software,
+                photo_thumbnail: fileData.photo_thumbnail,
                 timestamp: new Date().getTime()
             };
             localStorage.setItem('geoniv_last_upload', JSON.stringify(record));
@@ -149,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${hasGps ? `
                     <div style="margin-top: 6px;">
                         <a href="${gmapsUrl}" target="_blank" class="btn-gmaps-mini" style="display: inline-flex; width: 100%; justify-content: center;">
-                            📍 Ver no Google Maps (${upload.latitude.toFixed(4)}, ${upload.longitude.toFixed(4)})
+                            📍 Ver no Google Maps (${Number(upload.latitude).toFixed(4)}, ${Number(upload.longitude).toFixed(4)})
                         </a>
                     </div>
                     ` : '<div style="margin-top: 4px; color: var(--accent-amber); font-size: 11px;">Sem GPS EXIF no arquivo</div>'}
@@ -193,6 +206,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Erro ao buscar registros:', error);
+            const listContainer = document.getElementById('boxesList');
+            if (listContainer && listContainer.innerHTML.includes('Carregando')) {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa-solid fa-folder-open" style="font-size: 32px; color: var(--text-muted); margin-bottom: 8px;"></i>
+                        <p>Nenhum alvo cadastrado ainda.</p>
+                    </div>
+                `;
+            }
         }
     }
 
@@ -200,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const listContainer = document.getElementById('boxesList');
         if (!listContainer) return;
 
-        if (boxes.length === 0) {
+        if (!boxes || boxes.length === 0) {
             listContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fa-solid fa-folder-open" style="font-size: 32px; color: var(--text-muted); margin-bottom: 8px;"></i>
@@ -215,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = `box-item ${selectedBox?.id === box.id ? 'selected' : ''}`;
             
-            const hasGps = box.latitude && box.longitude;
+            const hasGps = box.latitude !== null && box.latitude !== undefined && box.longitude !== null && box.longitude !== undefined;
             const gmapsUrl = hasGps ? `https://www.google.com/maps?q=${box.latitude},${box.longitude}` : '#';
             const displayTitle = box.filename || box.title || box.code;
 
@@ -246,6 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            const latNum = Number(box.latitude);
+            const lngNum = Number(box.longitude);
+
             item.innerHTML = `
                 <div class="box-item-info">
                     <h4>
@@ -253,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${categoryBadge}
                         <span class="species-tag" style="font-family: var(--font-code);">${displayTitle}</span>
                     </h4>
-                    <p><i class="fa-solid fa-location-dot"></i> ${hasGps ? `${box.latitude.toFixed(5)}, ${box.longitude.toFixed(5)} ${box.is_inferred_gps ? '(Inferido)' : ''}` : 'Sem GPS'}</p>
+                    <p><i class="fa-solid fa-location-dot"></i> ${hasGps ? `${latNum.toFixed(5)}, ${lngNum.toFixed(5)} ${box.is_inferred_gps ? '(Inferido)' : ''}` : 'Sem GPS'}</p>
                     ${addressLine}
                 </div>
                 <div class="box-item-actions">
@@ -276,21 +301,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderBoxes2DMap(boxes) {
-        if (!markersGroup2D) return;
+        if (!markersGroup2D || !map2D) return;
         markersGroup2D.clearLayers();
 
         const latLngs = [];
 
         boxes.forEach(box => {
-            if (box.latitude && box.longitude) {
-                const marker = L.marker([box.latitude, box.longitude]).addTo(markersGroup2D);
-                const gmapsUrl = `https://www.google.com/maps?q=${box.latitude},${box.longitude}`;
+            if (box.latitude !== null && box.latitude !== undefined && box.longitude !== null && box.longitude !== undefined) {
+                const lat = Number(box.latitude);
+                const lng = Number(box.longitude);
+                const marker = L.marker([lat, lng]).addTo(markersGroup2D);
+                const gmapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
                 const title = box.filename || box.title || box.code;
 
                 const popupContent = `
                     <div style="font-family: Outfit, sans-serif; color: #0f172a; padding: 4px; min-width: 220px;">
                         <h3 style="margin: 0; font-size: 15px; color: #0f172a;">${box.code} - ${title}</h3>
-                        <p style="margin: 4px 0; font-size: 11px; color: #475569;"><strong>GPS:</strong> ${box.latitude.toFixed(6)}, ${box.longitude.toFixed(6)}</p>
+                        <p style="margin: 4px 0; font-size: 11px; color: #475569;"><strong>GPS:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
                         ${box.address && box.address.display_name ? `<p style="margin: 2px 0; font-size: 10px; color: #0284c7;">📍 ${box.address.display_name}</p>` : ''}
                         <div style="display: flex; gap: 6px; margin-top: 8px;">
                             <a href="${gmapsUrl}" target="_blank" style="flex: 1; background: #1a73e8; color: #fff; text-align: center; text-decoration: none; padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 12px; display: inline-block;">
@@ -304,12 +331,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
 
                 marker.bindPopup(popupContent);
-                latLngs.push([box.latitude, box.longitude]);
+                latLngs.push([lat, lng]);
             }
         });
 
         if (latLngs.length > 0) {
-            map2D.fitBounds(latLngs, { padding: [50, 50] });
+            map2D.fitBounds(latLngs, { padding: [50, 50], maxZoom: 16 });
         }
     }
 
@@ -339,10 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (cat === 'audio' || cat === 'video') mediaCount++;
         });
 
-        document.getElementById('dashTotalBoxes').innerText = total;
-        document.getElementById('dashGpsBoxes').innerText = `${withGps} (${total > 0 ? Math.round((withGps / total) * 100) : 0}%)`;
-        document.getElementById('dashCameraCount').innerText = cameraSet.size > 0 ? `${cameraSet.size} Câmera(s)` : `${pdfCount + docCount + mediaCount} Outros Arquivos`;
-        document.getElementById('dashKmlCount').innerText = `${withGps} Pontos em KML`;
+        const dashTotal = document.getElementById('dashTotalBoxes');
+        const dashGps = document.getElementById('dashGpsBoxes');
+        const dashCam = document.getElementById('dashCameraCount');
+        const dashKml = document.getElementById('dashKmlCount');
+
+        if (dashTotal) dashTotal.innerText = total;
+        if (dashGps) dashGps.innerText = `${withGps} (${total > 0 ? Math.round((withGps / total) * 100) : 0}%)`;
+        if (dashCam) dashCam.innerText = cameraSet.size > 0 ? `${cameraSet.size} Câmera(s)` : `${pdfCount + docCount + mediaCount} Outros Arquivos`;
+        if (dashKml) dashKml.innerText = `${withGps} Pontos em KML`;
     }
 
     /* =========================================================================
@@ -351,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function openBox3DInspectorModal(box) {
         selectedBox = box;
 
-        document.getElementById('modalBoxId').value = box.id;
+        document.getElementById('modalBoxId').value = box.id || '';
         document.getElementById('modalCode').value = box.code || '';
         document.getElementById('modalTitle').value = box.filename || box.title || '';
         document.getElementById('modalAltitude').value = box.altitude !== null && box.altitude !== undefined ? box.altitude : '';
@@ -365,9 +397,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const gmapsContainer = document.getElementById('modalGmapsAction');
         const hasGps = box.latitude !== null && box.latitude !== undefined && box.longitude !== null && box.longitude !== undefined;
 
-        if (hasGps) {
-            const lat = box.latitude;
-            const lng = box.longitude;
+        if (hasGps && gmapsContainer) {
+            const lat = Number(box.latitude);
+            const lng = Number(box.longitude);
 
             const gmapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
             const streetViewUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
@@ -400,9 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('btnFocusMap')?.addEventListener('click', () => {
                 focusOnLocation(lat, lng);
-                document.getElementById('box3DInspectorModal').classList.remove('active');
+                document.getElementById('box3DInspectorModal')?.classList.remove('active');
             });
-        } else {
+        } else if (gmapsContainer) {
             const scrub = box.scrubbing_analysis || {};
             const explanation = scrub.explanation || 'Arquivos enviados pelo WhatsApp, redes sociais, prints ou PDFs sem CEP/coordenadas textuais não armazenam o chip de GPS de satélite por padrão.';
             const source = scrub.scrubbing_source ? ` (${scrub.scrubbing_source})` : '';
@@ -422,168 +454,179 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
-
         // 2. ENDEREÇO GEOCODIFICADO REVERSO (NOMINATIM / OSM)
         const addressBox = document.getElementById('modalAddressInfo');
-        if (box.address && box.address.success) {
-            const addr = box.address;
-            addressBox.style.display = 'block';
-            addressBox.innerHTML = `
-                <div style="font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-location-dot"></i> Endereço Completo Geocodificado (Nominatim/OSM)
-                </div>
-                <p style="font-size: 13px; color: var(--text-primary); margin-bottom: 6px;"><strong>${addr.display_name}</strong></p>
-                <div class="address-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 11px;">
-                    ${addr.road ? `<div><span>Logradouro:</span> <strong>${addr.road}</strong></div>` : ''}
-                    ${addr.suburb ? `<div><span>Bairro:</span> <strong>${addr.suburb}</strong></div>` : ''}
-                    ${addr.city ? `<div><span>Cidade:</span> <strong>${addr.city}</strong></div>` : ''}
-                    ${addr.state ? `<div><span>Estado:</span> <strong>${addr.state}</strong></div>` : ''}
-                    ${addr.country ? `<div><span>País:</span> <strong>${addr.country}</strong></div>` : ''}
-                    ${addr.postcode ? `<div><span>CEP:</span> <strong>${addr.postcode}</strong></div>` : ''}
-                </div>
-            `;
-        } else {
-            addressBox.style.display = 'none';
+        if (addressBox) {
+            if (box.address && box.address.success) {
+                const addr = box.address;
+                addressBox.style.display = 'block';
+                addressBox.innerHTML = `
+                    <div style="font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-location-dot"></i> Endereço Completo Geocodificado (Nominatim/OSM)
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-primary); margin-bottom: 6px;"><strong>${addr.display_name}</strong></p>
+                    <div class="address-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 11px;">
+                        ${addr.road ? `<div><span>Logradouro:</span> <strong>${addr.road}</strong></div>` : ''}
+                        ${addr.suburb ? `<div><span>Bairro:</span> <strong>${addr.suburb}</strong></div>` : ''}
+                        ${addr.city ? `<div><span>Cidade:</span> <strong>${addr.city}</strong></div>` : ''}
+                        ${addr.state ? `<div><span>Estado:</span> <strong>${addr.state}</strong></div>` : ''}
+                        ${addr.country ? `<div><span>País:</span> <strong>${addr.country}</strong></div>` : ''}
+                        ${addr.postcode ? `<div><span>CEP:</span> <strong>${addr.postcode}</strong></div>` : ''}
+                    </div>
+                `;
+            } else {
+                addressBox.style.display = 'none';
+            }
         }
 
         // 3. METADADOS ESPECÍFICOS DO ARQUIVO (IMAGEM, PDF, OFFICE, MÍDIA)
         const exifBox = document.getElementById('modalExifInfo');
-        const cat = box.category || 'image';
-        const spec = box.specific_metadata || {};
+        if (exifBox) {
+            const cat = box.category || 'image';
+            const spec = box.specific_metadata || {};
 
-        let exifHtml = '';
+            let exifHtml = '';
 
-        if (cat === 'pdf') {
-            exifHtml = `
-                <div class="exif-header-title"><i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Metadados Forenses do Documento PDF</div>
-                <div class="exif-row"><span>Título:</span> <span class="exif-val">${spec.title || 'Não especificado'}</span></div>
-                <div class="exif-row"><span>Autor:</span> <span class="exif-val">${spec.author || 'Não especificado'}</span></div>
-                <div class="exif-row"><span>Assunto:</span> <span class="exif-val">${spec.subject || 'Não especificado'}</span></div>
-                <div class="exif-row"><span>Software Criador:</span> <span class="exif-val">${spec.creator || spec.producer || 'Desconhecido'}</span></div>
-                <div class="exif-row"><span>Total de Páginas:</span> <span class="exif-val"><strong>${spec.pages_count || 0} págs</strong></span></div>
-                <div class="exif-row"><span>Data de Criação:</span> <span class="exif-val">${spec.creation_date || box.date_added || 'N/A'}</span></div>
-                <div class="exif-row"><span>Criptografado:</span> <span class="exif-val">${spec.is_encrypted ? 'Sim (Protegido)' : 'Não'}</span></div>
-            `;
-        } else if (cat === 'document') {
-            exifHtml = `
-                <div class="exif-header-title"><i class="fa-solid fa-file-word" style="color: #2563eb;"></i> Metadados do Documento Office (${box.filename})</div>
-                <div class="exif-row"><span>Título:</span> <span class="exif-val">${spec.title || 'Não especificado'}</span></div>
-                <div class="exif-row"><span>Autor / Criador:</span> <span class="exif-val">${spec.author || 'Não especificado'}</span></div>
-                <div class="exif-row"><span>Último Modificador:</span> <span class="exif-val">${spec.last_modified_by || 'N/A'}</span></div>
-                <div class="exif-row"><span>Software Aplicação:</span> <span class="exif-val">${spec.application || 'Microsoft Office / LibreOffice'}</span></div>
-                ${spec.words_count ? `<div class="exif-row"><span>Contagem de Palavras:</span> <span class="exif-val">${spec.words_count} palavras</span></div>` : ''}
-                ${spec.pages_count ? `<div class="exif-row"><span>Páginas / Slides:</span> <span class="exif-val">${spec.pages_count}</span></div>` : ''}
-                <div class="exif-row"><span>Data de Criação:</span> <span class="exif-val">${spec.creation_date || box.date_added || 'N/A'}</span></div>
-            `;
-        } else if (cat === 'audio' || cat === 'video') {
-            exifHtml = `
-                <div class="exif-header-title"><i class="fa-solid fa-${cat === 'video' ? 'film' : 'music'}" style="color: #a855f7;"></i> Metadados de Mídia (${cat.toUpperCase()})</div>
-                <div class="exif-row"><span>Tipo de Mídia:</span> <span class="exif-val">${spec.media_type || cat.toUpperCase()}</span></div>
-                <div class="exif-row"><span>Formato:</span> <span class="exif-val">${spec.format || 'N/A'}</span></div>
-                <div class="exif-row"><span>Tamanho do Arquivo:</span> <span class="exif-val">${box.file_size || 'N/A'}</span></div>
-                <div class="exif-row"><span>Tipo MIME:</span> <span class="exif-val">${box.mime_type || 'N/A'}</span></div>
-            `;
-        } else {
-            // IMAGEM
-            const isEditedTag = box.is_edited ? `<span class="forensic-warning-tag"><i class="fa-solid fa-triangle-exclamation"></i> Editado via ${box.software}</span>` : '<span style="color: var(--accent-emerald);">Sem software de edição detectado</span>';
+            if (cat === 'pdf') {
+                exifHtml = `
+                    <div class="exif-header-title"><i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Metadados Forenses do Documento PDF</div>
+                    <div class="exif-row"><span>Título:</span> <span class="exif-val">${spec.title || 'Não especificado'}</span></div>
+                    <div class="exif-row"><span>Autor:</span> <span class="exif-val">${spec.author || 'Não especificado'}</span></div>
+                    <div class="exif-row"><span>Assunto:</span> <span class="exif-val">${spec.subject || 'Não especificado'}</span></div>
+                    <div class="exif-row"><span>Software Criador:</span> <span class="exif-val">${spec.creator || spec.producer || 'Desconhecido'}</span></div>
+                    <div class="exif-row"><span>Total de Páginas:</span> <span class="exif-val"><strong>${spec.pages_count || 0} págs</strong></span></div>
+                    <div class="exif-row"><span>Data de Criação:</span> <span class="exif-val">${spec.creation_date || box.date_added || 'N/A'}</span></div>
+                    <div class="exif-row"><span>Criptografado:</span> <span class="exif-val">${spec.is_encrypted ? 'Sim (Protegido)' : 'Não'}</span></div>
+                `;
+            } else if (cat === 'document') {
+                exifHtml = `
+                    <div class="exif-header-title"><i class="fa-solid fa-file-word" style="color: #2563eb;"></i> Metadados do Documento Office (${box.filename})</div>
+                    <div class="exif-row"><span>Título:</span> <span class="exif-val">${spec.title || 'Não especificado'}</span></div>
+                    <div class="exif-row"><span>Autor / Criador:</span> <span class="exif-val">${spec.author || 'Não especificado'}</span></div>
+                    <div class="exif-row"><span>Último Modificador:</span> <span class="exif-val">${spec.last_modified_by || 'N/A'}</span></div>
+                    <div class="exif-row"><span>Software Aplicação:</span> <span class="exif-val">${spec.application || 'Microsoft Office / LibreOffice'}</span></div>
+                    ${spec.words_count ? `<div class="exif-row"><span>Contagem de Palavras:</span> <span class="exif-val">${spec.words_count} palavras</span></div>` : ''}
+                    ${spec.pages_count ? `<div class="exif-row"><span>Páginas / Slides:</span> <span class="exif-val">${spec.pages_count}</span></div>` : ''}
+                    <div class="exif-row"><span>Data de Criação:</span> <span class="exif-val">${spec.creation_date || box.date_added || 'N/A'}</span></div>
+                `;
+            } else if (cat === 'audio' || cat === 'video') {
+                exifHtml = `
+                    <div class="exif-header-title"><i class="fa-solid fa-${cat === 'video' ? 'film' : 'music'}" style="color: #a855f7;"></i> Metadados de Mídia (${cat.toUpperCase()})</div>
+                    <div class="exif-row"><span>Tipo de Mídia:</span> <span class="exif-val">${spec.media_type || cat.toUpperCase()}</span></div>
+                    <div class="exif-row"><span>Formato:</span> <span class="exif-val">${spec.format || 'N/A'}</span></div>
+                    <div class="exif-row"><span>Tamanho do Arquivo:</span> <span class="exif-val">${box.file_size || 'N/A'}</span></div>
+                    <div class="exif-row"><span>Tipo MIME:</span> <span class="exif-val">${box.mime_type || 'N/A'}</span></div>
+                `;
+            } else {
+                const isEditedTag = box.is_edited ? `<span class="forensic-warning-tag"><i class="fa-solid fa-triangle-exclamation"></i> Editado via ${box.software}</span>` : '<span style="color: var(--accent-emerald);">Sem software de edição detectado</span>';
 
-            exifHtml = `
-                <div class="exif-header-title"><i class="fa-solid fa-camera" style="color: var(--accent-cyan);"></i> Metadados Forenses EXIF da Fotografia</div>
-                <div class="exif-row"><span>Integridade Forense:</span> <span>${isEditedTag}</span></div>
-                <div class="exif-row"><span>Dispositivo / Câmera:</span> <span class="exif-val">${box.camera_info || 'Não informada'}</span></div>
-                <div class="exif-row"><span>Data / Hora EXIF:</span> <span class="exif-val">${box.date_added || 'Não informada'}</span></div>
-                <div class="exif-row"><span>Arquivo Original:</span> <span class="exif-val">${box.filename || 'Foto enviada'}</span></div>
-                ${box.dimensions ? `<div class="exif-row"><span>Dimensões:</span> <span class="exif-val">${box.dimensions} px</span></div>` : ''}
-                ${box.iso ? `<div class="exif-row"><span>ISO:</span> <span class="exif-val">${box.iso}</span></div>` : ''}
-                ${box.aperture ? `<div class="exif-row"><span>Abertura:</span> <span class="exif-val">${box.aperture}</span></div>` : ''}
-                ${box.focal_length ? `<div class="exif-row"><span>Distância Focal:</span> <span class="exif-val">${box.focal_length}</span></div>` : ''}
-                ${box.exposure_time ? `<div class="exif-row"><span>Exposição:</span> <span class="exif-val">${box.exposure_time}</span></div>` : ''}
-                ${box.lens_model ? `<div class="exif-row"><span>Lente:</span> <span class="exif-val">${box.lens_model}</span></div>` : ''}
-            `;
+                exifHtml = `
+                    <div class="exif-header-title"><i class="fa-solid fa-camera" style="color: var(--accent-cyan);"></i> Metadados Forenses EXIF da Fotografia</div>
+                    <div class="exif-row"><span>Integridade Forense:</span> <span>${isEditedTag}</span></div>
+                    <div class="exif-row"><span>Dispositivo / Câmera:</span> <span class="exif-val">${box.camera_info || 'Não informada'}</span></div>
+                    <div class="exif-row"><span>Data / Hora EXIF:</span> <span class="exif-val">${box.date_added || 'Não informada'}</span></div>
+                    <div class="exif-row"><span>Arquivo Original:</span> <span class="exif-val">${box.filename || 'Foto enviada'}</span></div>
+                    ${box.dimensions ? `<div class="exif-row"><span>Dimensões:</span> <span class="exif-val">${box.dimensions} px</span></div>` : ''}
+                    ${box.iso ? `<div class="exif-row"><span>ISO:</span> <span class="exif-val">${box.iso}</span></div>` : ''}
+                    ${box.aperture ? `<div class="exif-row"><span>Abertura:</span> <span class="exif-val">${box.aperture}</span></div>` : ''}
+                    ${box.focal_length ? `<div class="exif-row"><span>Distância Focal:</span> <span class="exif-val">${box.focal_length}</span></div>` : ''}
+                    ${box.exposure_time ? `<div class="exif-row"><span>Exposição:</span> <span class="exif-val">${box.exposure_time}</span></div>` : ''}
+                    ${box.lens_model ? `<div class="exif-row"><span>Lente:</span> <span class="exif-val">${box.lens_model}</span></div>` : ''}
+                `;
+            }
+
+            exifBox.innerHTML = exifHtml;
         }
-
-        exifBox.innerHTML = exifHtml;
 
         // 4. HASHES FORENSES (MD5 & SHA-256)
         const hashesBox = document.getElementById('modalHashesInfo');
-        if (box.hashes && (box.hashes.sha256 || box.hashes.md5)) {
-            hashesBox.style.display = 'block';
-            hashesBox.innerHTML = `
-                <div style="font-size: 12px; font-weight: 700; color: var(--accent-emerald); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-fingerprint"></i> Hashes Forenses de Integridade
-                </div>
-                <div class="hash-row" style="margin-bottom: 4px;">
-                    <span style="font-size: 11px; color: var(--text-secondary);">SHA-256:</span>
-                    <code style="font-size: 10px; font-family: var(--font-code); color: #38bdf8; word-break: break-all;">${box.hashes.sha256 || 'N/A'}</code>
-                </div>
-                <div class="hash-row">
-                    <span style="font-size: 11px; color: var(--text-secondary);">MD5:</span>
-                    <code style="font-size: 10px; font-family: var(--font-code); color: #f59e0b; word-break: break-all;">${box.hashes.md5 || 'N/A'}</code>
-                </div>
-            `;
-        } else {
-            hashesBox.style.display = 'none';
+        if (hashesBox) {
+            if (box.hashes && (box.hashes.sha256 || box.hashes.md5)) {
+                hashesBox.style.display = 'block';
+                hashesBox.innerHTML = `
+                    <div style="font-size: 12px; font-weight: 700; color: var(--accent-emerald); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-fingerprint"></i> Hashes Forenses de Integridade
+                    </div>
+                    <div class="hash-row" style="margin-bottom: 4px;">
+                        <span style="font-size: 11px; color: var(--text-secondary);">SHA-256:</span>
+                        <code style="font-size: 10px; font-family: var(--font-code); color: #38bdf8; word-break: break-all;">${box.hashes.sha256 || 'N/A'}</code>
+                    </div>
+                    <div class="hash-row">
+                        <span style="font-size: 11px; color: var(--text-secondary);">MD5:</span>
+                        <code style="font-size: 10px; font-family: var(--font-code); color: #f59e0b; word-break: break-all;">${box.hashes.md5 || 'N/A'}</code>
+                    </div>
+                `;
+            } else {
+                hashesBox.style.display = 'none';
+            }
         }
 
         // 5. PIVÔS DE BUSCA VISUAL OSINT & DESCARTE (IMAGENS SEM GPS)
         const visualBox = document.getElementById('modalVisualOsintPivots');
+        const cat = box.category || 'image';
         const scrub = box.scrubbing_analysis;
 
-        if (cat === 'image') {
-            visualBox.style.display = 'block';
-            let vHtml = `
-                <div style="font-size: 13px; font-weight: 700; color: var(--accent-purple); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-eye"></i> Investigação Visual Reversa OSINT (Imagens)
-                </div>
-            `;
-
-            if (scrub && scrub.scrubbing_detected) {
-                vHtml += `
-                    <div class="scrub-warning-card" style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--accent-amber); padding: 8px 12px; border-radius: 6px; margin-bottom: 10px;">
-                        <span style="font-weight: 700; font-size: 12px; color: var(--accent-amber);"><i class="fa-solid fa-shield-cat"></i> Origem Detectada: ${scrub.scrubbing_source}</span>
-                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">${scrub.explanation}</p>
+        if (visualBox) {
+            if (cat === 'image') {
+                visualBox.style.display = 'block';
+                let vHtml = `
+                    <div style="font-size: 13px; font-weight: 700; color: var(--accent-purple); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-eye"></i> Investigação Visual Reversa OSINT (Imagens)
                     </div>
                 `;
-            }
 
-            if (scrub && scrub.clues_found && scrub.clues_found.length > 0) {
-                vHtml += `<div style="font-size: 11px; color: var(--accent-emerald); margin-bottom: 8px;">`;
-                scrub.clues_found.forEach(c => {
-                    vHtml += `<div><i class="fa-solid fa-magnifying-glass-location"></i> ${c}</div>`;
-                });
-                vHtml += `</div>`;
-            }
+                if (scrub && scrub.scrubbing_detected) {
+                    vHtml += `
+                        <div class="scrub-warning-card" style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--accent-amber); padding: 8px 12px; border-radius: 6px; margin-bottom: 10px;">
+                            <span style="font-weight: 700; font-size: 12px; color: var(--accent-amber);"><i class="fa-solid fa-shield-cat"></i> Origem Detectada: ${scrub.scrubbing_source}</span>
+                            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">${scrub.explanation}</p>
+                        </div>
+                    `;
+                }
 
-            vHtml += `
-                <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Se a foto não possui coordenadas EXIF, utilize os pivôs OSINT de Busca Reversa para identificar a localização exata por correspondência de imagem:</p>
-                <div class="visual-search-btn-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-                    <a href="https://yandex.com/images/search" target="_blank" class="btn-visual-pivot yandex-btn">
-                        <i class="fa-solid fa-eye"></i> Yandex GEOINT
-                    </a>
-                    <a href="https://lens.google.com/" target="_blank" class="btn-visual-pivot lens-btn">
-                        <i class="fa-brands fa-google"></i> Google Lens
-                    </a>
-                    <a href="https://geospy.ai/" target="_blank" class="btn-visual-pivot geospy-btn">
-                        <i class="fa-solid fa-brain"></i> GeoSpy AI
-                    </a>
-                    <a href="https://tineye.com/" target="_blank" class="btn-visual-pivot tineye-btn">
-                        <i class="fa-solid fa-robot"></i> TinEye
-                    </a>
-                </div>
-            `;
-            visualBox.innerHTML = vHtml;
-        } else {
-            visualBox.style.display = 'none';
+                if (scrub && scrub.clues_found && scrub.clues_found.length > 0) {
+                    vHtml += `<div style="font-size: 11px; color: var(--accent-emerald); margin-bottom: 8px;">`;
+                    scrub.clues_found.forEach(c => {
+                        vHtml += `<div><i class="fa-solid fa-magnifying-glass-location"></i> ${c}</div>`;
+                    });
+                    vHtml += `</div>`;
+                }
+
+                vHtml += `
+                    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Se a foto não possui coordenadas EXIF, utilize os pivôs OSINT de Busca Reversa para identificar a localização exata por correspondência de imagem:</p>
+                    <div class="visual-search-btn-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                        <a href="https://yandex.com/images/search" target="_blank" class="btn-visual-pivot yandex-btn">
+                            <i class="fa-solid fa-eye"></i> Yandex GEOINT
+                        </a>
+                        <a href="https://lens.google.com/" target="_blank" class="btn-visual-pivot lens-btn">
+                            <i class="fa-brands fa-google"></i> Google Lens
+                        </a>
+                        <a href="https://geospy.ai/" target="_blank" class="btn-visual-pivot geospy-btn">
+                            <i class="fa-solid fa-brain"></i> GeoSpy AI
+                        </a>
+                        <a href="https://tineye.com/" target="_blank" class="btn-visual-pivot tineye-btn">
+                            <i class="fa-solid fa-robot"></i> TinEye
+                        </a>
+                    </div>
+                `;
+                visualBox.innerHTML = vHtml;
+            } else {
+                visualBox.style.display = 'none';
+            }
         }
 
         const modal = document.getElementById('box3DInspectorModal');
-        modal.classList.add('active');
+        modal?.classList.add('active');
 
         const slider = document.getElementById('explodeSlider');
         if (slider) slider.value = 0;
 
         if (engine3D) {
-            engine3D.openHive3DInspector(box);
+            try {
+                engine3D.openHive3DInspector(box);
+            } catch (e) {
+                console.warn('Erro ao abrir inspetor 3D:', e);
+            }
         }
     }
 
@@ -601,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('closeInspectorModal')?.addEventListener('click', () => {
-        document.getElementById('box3DInspectorModal').classList.remove('active');
+        document.getElementById('box3DInspectorModal')?.classList.remove('active');
     });
 
     /* =========================================================================
@@ -710,7 +753,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!btnLookup || !phoneInput || !resultContainer) return;
 
-        // Permitir Enter para pesquisar
         phoneInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') btnLookup.click();
         });
@@ -743,18 +785,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dddInfo = data.ddd_info;
                 const hasDdd = dddInfo && dddInfo.lat && dddInfo.lng;
 
-                // Ícone de tipo de linha
-                let lineIcon = 'fa-solid fa-question';
-                let lineColor = 'var(--text-secondary)';
-                if (data.line_type && data.line_type.includes('Celular')) {
-                    lineIcon = 'fa-solid fa-mobile-screen-button';
-                    lineColor = 'var(--accent-purple)';
-                } else if (data.line_type && data.line_type.includes('Fixo')) {
-                    lineIcon = 'fa-solid fa-phone-office';
-                    lineColor = 'var(--accent-cyan)';
-                }
-
-                // Grid de dados principais
                 let html = `
                     <div class="phone-result-header">
                         <div class="phone-number-display">
@@ -797,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="phone-metric-icon" style="color: var(--accent-emerald);"><i class="fa-solid fa-earth-americas"></i></span>
                             <div class="phone-metric-data">
                                 <span class="phone-metric-lbl">Coordenadas DDD</span>
-                                <span class="phone-metric-val" style="font-family: var(--font-code); font-size: 12px;">${dddInfo.lat.toFixed(4)}, ${dddInfo.lng.toFixed(4)}</span>
+                                <span class="phone-metric-val" style="font-family: var(--font-code); font-size: 12px;">${Number(dddInfo.lat).toFixed(4)}, ${Number(dddInfo.lng).toFixed(4)}</span>
                             </div>
                         </div>
                     `;
@@ -813,9 +843,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
 
-                html += `</div>`; // fecha phone-metrics-grid
+                html += `</div>`;
 
-                // Botão de localizar no mapa
                 if (hasDdd) {
                     html += `
                         <div style="margin-top: 14px;">
@@ -826,7 +855,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
 
-                // Links OSINT
                 if (data.osint_links && data.osint_links.length > 0) {
                     html += `
                         <div class="phone-osint-links-header">
@@ -854,7 +882,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     html += `</div>`;
                 }
 
-                // Avisos
                 if (data.warnings && data.warnings.length > 0) {
                     html += `<div class="phone-warnings">`;
                     data.warnings.forEach(w => {
@@ -865,7 +892,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 resultContainer.innerHTML = html;
 
-                // Event listener para focar no mapa
                 if (hasDdd) {
                     document.getElementById('btnFocusPhoneOnMap')?.addEventListener('click', async () => {
                         await fetchAndRenderBoxes();
@@ -873,7 +899,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                // Recarregar alvos se um ponto foi adicionado
                 if (data.record) {
                     await fetchAndRenderBoxes();
                 }
@@ -896,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectA.innerHTML = '';
         selectB.innerHTML = '';
 
-        const validBoxes = boxes.filter(b => b.latitude && b.longitude);
+        const validBoxes = boxes.filter(b => b.latitude !== null && b.latitude !== undefined && b.longitude !== null && b.longitude !== undefined);
 
         if (validBoxes.length < 2) {
             selectA.innerHTML = '<option value="">São necessários pelo menos 2 alvos com GPS</option>';
@@ -905,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         validBoxes.forEach((b, i) => {
-            const title = `${b.code} - ${b.filename || b.title} (${b.latitude.toFixed(4)}, ${b.longitude.toFixed(4)})`;
+            const title = `${b.code} - ${b.filename || b.title} (${Number(b.latitude).toFixed(4)}, ${Number(b.longitude).toFixed(4)})`;
             const optA = document.createElement('option');
             optA.value = b.id;
             optA.innerText = title;
@@ -940,21 +965,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     const data = await res.json();
                     const resultBox = document.getElementById('geodesicResultBox');
-                    resultBox.style.display = 'grid';
-                    resultBox.innerHTML = `
-                        <div class="geodesic-metric">
-                            <span class="geodesic-metric-val">${data.distance_meters} m</span>
-                            <span class="geodesic-metric-lbl">Distância Direta (Metros)</span>
-                        </div>
-                        <div class="geodesic-metric">
-                            <span class="geodesic-metric-val">${data.distance_km} km</span>
-                            <span class="geodesic-metric-lbl">Distância em Quilômetros</span>
-                        </div>
-                        <div class="geodesic-metric">
-                            <span class="geodesic-metric-val">${data.bearing_degrees}°</span>
-                            <span class="geodesic-metric-lbl">Azimute de Visada (Bearing)</span>
-                        </div>
-                    `;
+                    if (resultBox) {
+                        resultBox.style.display = 'grid';
+                        resultBox.innerHTML = `
+                            <div class="geodesic-metric">
+                                <span class="geodesic-metric-val">${data.distance_meters} m</span>
+                                <span class="geodesic-metric-lbl">Distância Direta (Metros)</span>
+                            </div>
+                            <div class="geodesic-metric">
+                                <span class="geodesic-metric-val">${data.distance_km} km</span>
+                                <span class="geodesic-metric-lbl">Distância em Quilômetros</span>
+                            </div>
+                            <div class="geodesic-metric">
+                                <span class="geodesic-metric-val">${data.bearing_degrees}°</span>
+                                <span class="geodesic-metric-lbl">Azimute de Visada (Bearing)</span>
+                            </div>
+                        `;
+                    }
                 }
             } catch (err) {
                 console.error('Erro ao calcular distância geodésica:', err);
@@ -1076,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const updated = await res.json();
                     saveUploadToLocalStorage(updated);
 
-                    document.getElementById('box3DInspectorModal').classList.remove('active');
+                    document.getElementById('box3DInspectorModal')?.classList.remove('active');
                     await fetchAndRenderBoxes();
                 }
             } catch (err) {
@@ -1091,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await fetch(`/api/boxes/${boxId}`, { method: 'DELETE' });
                 if (res.ok) {
-                    document.getElementById('box3DInspectorModal').classList.remove('active');
+                    document.getElementById('box3DInspectorModal')?.classList.remove('active');
                     await fetchAndRenderBoxes();
                 }
             } catch (err) {
@@ -1143,6 +1170,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 (b.notes && b.notes.toLowerCase().includes(query))
             );
             renderBoxesList(filtered);
+        });
+    }
+
+    /* =========================================================================
+       CENTRAL DE FERRAMENTAS & DIRETÓRIO OSINT HUB (FILTROS E BUSCA)
+       ========================================================================= */
+    function setupOsintHub() {
+        const filterBtns = document.querySelectorAll('.osint-filter-btn');
+        const searchInput = document.getElementById('osintHubSearchInput');
+        const toolCards = document.querySelectorAll('.osint-tool-card');
+
+        let activeCategory = 'all';
+        let searchQuery = '';
+
+        function applyOsintFilter() {
+            toolCards.forEach(card => {
+                const cardCategory = card.getAttribute('data-category');
+                const cardText = card.innerText.toLowerCase();
+
+                const matchesCategory = (activeCategory === 'all' || cardCategory === activeCategory);
+                const matchesSearch = (!searchQuery || cardText.includes(searchQuery));
+
+                if (matchesCategory && matchesSearch) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeCategory = btn.getAttribute('data-category') || 'all';
+                applyOsintFilter();
+            });
+        });
+
+        searchInput?.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            applyOsintFilter();
         });
     }
 });

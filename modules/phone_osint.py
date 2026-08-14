@@ -7,11 +7,12 @@ tipo de linha e geração de links OSINT para investigação externa.
 
 import re
 import urllib.parse
+from typing import Dict, Any, List, Optional
 
 # =============================================================================
 # TABELA DE DDDs BRASILEIROS — Estado, Cidade Principal, Coordenadas
 # =============================================================================
-DDD_TABLE = {
+DDD_TABLE: Dict[str, Dict[str, Any]] = {
     # São Paulo
     "11": {"uf": "SP", "city": "São Paulo", "lat": -23.5505, "lng": -46.6333, "tz": "America/Sao_Paulo"},
     "12": {"uf": "SP", "city": "São José dos Campos", "lat": -23.1896, "lng": -45.8841, "tz": "America/Sao_Paulo"},
@@ -107,13 +108,15 @@ DDD_TABLE = {
     "96": {"uf": "AP", "city": "Macapá", "lat": 0.0345, "lng": -51.0694, "tz": "America/Belem"},
 }
 
+# Alias para compatibilidade
+DDD_MAP = DDD_TABLE
 
-def parse_phone_number(raw: str) -> dict:
+
+def parse_phone_number(raw: str) -> Dict[str, Any]:
     """
     Limpa, valida e extrai componentes de um número de telefone.
     Suporta formatos brasileiros: +55 11 98765-4321, (11) 98765-4321, 11987654321, etc.
     """
-    # Remove tudo que não é dígito nem +
     cleaned = re.sub(r"[^\d+]", "", raw.strip())
 
     result = {
@@ -127,24 +130,20 @@ def parse_phone_number(raw: str) -> dict:
         "formatted": None,
     }
 
-    # Detectar e remover código de país
     digits_only = re.sub(r"[^\d]", "", cleaned)
 
     if cleaned.startswith("+55") or (len(digits_only) >= 12 and digits_only.startswith("55")):
         result["country_code"] = "55"
-        digits_only = digits_only[2:]  # Remove 55
+        digits_only = digits_only[2:]
         result["is_brazilian"] = True
-    elif len(digits_only) >= 10 and len(digits_only) <= 11:
-        # Provavelmente brasileiro sem código de país
+    elif 10 <= len(digits_only) <= 11:
         result["country_code"] = "55"
         result["is_brazilian"] = True
     elif cleaned.startswith("+"):
-        # Número internacional
-        result["country_code"] = digits_only[:2]
+        result["country_code"] = digits_only[:2] if len(digits_only) >= 2 else "00"
         result["is_brazilian"] = False
 
     if result["is_brazilian"]:
-        # Número brasileiro: DDD (2 dígitos) + 8 ou 9 dígitos
         if len(digits_only) >= 10:
             result["ddd"] = digits_only[:2]
             result["subscriber"] = digits_only[2:]
@@ -155,7 +154,6 @@ def parse_phone_number(raw: str) -> dict:
             elif len(digits_only) == 10:
                 result["formatted"] = f"+55 ({result['ddd']}) {result['subscriber'][:4]}-{result['subscriber'][4:]}"
         elif len(digits_only) >= 8:
-            # Sem DDD
             result["subscriber"] = digits_only
             result["is_valid_format"] = False
     else:
@@ -165,7 +163,7 @@ def parse_phone_number(raw: str) -> dict:
     return result
 
 
-def identify_line_type(parsed: dict) -> str:
+def identify_line_type(parsed: Dict[str, Any]) -> str:
     """
     Identifica tipo de linha baseado no formato do número brasileiro.
     Celulares brasileiros têm 9 dígitos (começando com 9).
@@ -173,7 +171,7 @@ def identify_line_type(parsed: dict) -> str:
     """
     subscriber = parsed.get("subscriber", "")
     if not subscriber or not parsed.get("is_brazilian"):
-        return "Desconhecido"
+        return "Desconhecido / Internacional"
 
     if len(subscriber) == 9 and subscriber.startswith("9"):
         return "Celular / Móvel"
@@ -182,7 +180,7 @@ def identify_line_type(parsed: dict) -> str:
         if first_digit in ("2", "3", "4", "5"):
             return "Telefone Fixo"
         elif first_digit in ("7", "8", "9"):
-            return "Celular / Móvel (formato antigo)"
+            return "Celular / Móvel (formato legado)"
         else:
             return "Fixo / Especial"
     elif len(subscriber) >= 3 and subscriber.startswith("0800"):
@@ -191,20 +189,16 @@ def identify_line_type(parsed: dict) -> str:
         return "Formato não identificado"
 
 
-def identify_carrier_hint(parsed: dict) -> str:
+def identify_carrier_hint(parsed: Dict[str, Any]) -> str:
     """
-    Tentativa de identificação de operadora pelo prefixo do número.
-    Nota: Desde a portabilidade numérica, o prefixo original pode não
-    refletir a operadora atual. Isso é apenas uma indicação do chip original.
+    Tentativa de identificação de operadora pelo prefixo original do número.
     """
     subscriber = parsed.get("subscriber", "")
     if not subscriber or not parsed.get("is_brazilian"):
         return "Não identificada (número internacional)"
 
-    # Prefixos comuns (chip original, antes de portabilidade)
-    # Os 4 primeiros dígitos do subscriber (sem o 9 inicial em celulares)
     if len(subscriber) == 9:
-        prefix_4 = subscriber[1:5]  # Remove o 9 inicial
+        prefix_4 = subscriber[1:5]
     elif len(subscriber) == 8:
         prefix_4 = subscriber[:4]
     else:
@@ -212,7 +206,6 @@ def identify_carrier_hint(parsed: dict) -> str:
 
     prefix_2 = prefix_4[:2] if len(prefix_4) >= 2 else ""
 
-    # Faixas aproximadas (podem variar por região)
     vivo_ranges = ("96", "97", "98", "99")
     claro_ranges = ("91", "92", "93", "94", "95", "73", "74", "75")
     tim_ranges = ("80", "81", "82", "83", "84", "85")
@@ -230,23 +223,20 @@ def identify_carrier_hint(parsed: dict) -> str:
         return "Operadora não determinada pelo prefixo"
 
 
-def get_ddd_info(ddd: str) -> dict | None:
+def get_ddd_info(ddd: str) -> Optional[Dict[str, Any]]:
     """Retorna informações geográficas do DDD brasileiro."""
-    return DDD_TABLE.get(ddd)
+    return DDD_TABLE.get(str(ddd).strip())
 
 
-def generate_osint_links(phone_raw: str, parsed: dict) -> list:
+def generate_osint_links(phone_raw: str, parsed: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Gera links para plataformas de OSINT externas onde o usuário pode
     pesquisar informações públicas sobre o número.
     """
-    # Número limpo para busca
     cleaned = re.sub(r"[^\d]", "", phone_raw.strip())
     if parsed.get("is_brazilian") and not cleaned.startswith("55"):
         cleaned = "55" + cleaned
 
-    formatted_search = parsed.get("formatted") or phone_raw.strip()
-    encoded_raw = urllib.parse.quote_plus(formatted_search)
     encoded_clean = urllib.parse.quote_plus(cleaned)
     encoded_plus = urllib.parse.quote_plus(f"+{cleaned}")
 
@@ -312,7 +302,7 @@ def generate_osint_links(phone_raw: str, parsed: dict) -> list:
     return links
 
 
-def phone_lookup(raw_phone: str) -> dict:
+def phone_lookup(raw_phone: str) -> Dict[str, Any]:
     """
     Função principal: analisa um número de telefone e retorna todos os
     dados OSINT disponíveis offline + links para investigação externa.
@@ -334,7 +324,6 @@ def phone_lookup(raw_phone: str) -> dict:
         "warnings": [],
     }
 
-    # Dados geográficos do DDD
     if parsed.get("ddd"):
         ddd_info = get_ddd_info(parsed["ddd"])
         if ddd_info:
@@ -342,7 +331,6 @@ def phone_lookup(raw_phone: str) -> dict:
         else:
             result["warnings"].append(f"DDD {parsed['ddd']} não encontrado na tabela brasileira.")
 
-    # Avisos úteis
     if not parsed.get("is_valid_format"):
         result["warnings"].append("O formato do número pode estar incompleto ou incorreto.")
 

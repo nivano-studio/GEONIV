@@ -32,30 +32,37 @@ class Geoniv3DEngine {
        1. CENÁRIO 3D PRINCIPAL (TERRENO TECNOLÓGICO)
        ========================================================================= */
     initTerrainScene() {
+        if (!this.container) return;
+
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x070b14);
         this.scene.fog = new THREE.FogExp2(0x070b14, 0.015);
 
-        const width = this.container.clientWidth || window.innerWidth;
+        const width = this.container.clientWidth || window.innerWidth || 800;
         const height = this.container.clientHeight || 600;
         this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
         this.camera.position.set(0, 16, 28);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
         this.renderer.setSize(width, height);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        if (THREE.ACESFilmicToneMapping) {
+            this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        }
 
+        this.container.innerHTML = '';
         this.container.appendChild(this.renderer.domElement);
 
-        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
-        this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
-        this.controls.minDistance = 3;
-        this.controls.maxDistance = 120;
+        if (THREE.OrbitControls) {
+            this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+            this.controls.enableDamping = true;
+            this.controls.dampingFactor = 0.05;
+            this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
+            this.controls.minDistance = 3;
+            this.controls.maxDistance = 120;
+        }
 
         // Iluminação Futurista Cyan/Green
         const ambientLight = new THREE.AmbientLight(0xe0f2fe, 0.7);
@@ -64,8 +71,6 @@ class Geoniv3DEngine {
         const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
         sunLight.position.set(30, 40, 20);
         sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
         this.scene.add(sunLight);
 
         const pointLight = new THREE.PointLight(0x06b6d4, 1.5, 60);
@@ -204,24 +209,30 @@ class Geoniv3DEngine {
         layers.push({ name: "Antena GPS & Sensor EXIF", group: domeGroup, defaultY: currentY });
 
         // Placa 3D com Nome do Arquivo
-        const labelCanvas = document.createElement('canvas');
-        labelCanvas.width = 256;
-        labelCanvas.height = 128;
-        const ctx = labelCanvas.getContext('2d');
-        ctx.fillStyle = '#06b6d4';
-        ctx.fillRect(0, 0, 256, 128);
-        ctx.fillStyle = '#070b14';
-        ctx.font = 'bold 36px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(itemData.code || 'GEO-3D', 128, 64);
+        try {
+            const labelCanvas = document.createElement('canvas');
+            labelCanvas.width = 256;
+            labelCanvas.height = 128;
+            const ctx = labelCanvas.getContext('2d');
+            if (ctx) {
+                ctx.fillStyle = '#06b6d4';
+                ctx.fillRect(0, 0, 256, 128);
+                ctx.fillStyle = '#070b14';
+                ctx.font = 'bold 36px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(itemData.code || 'GEO-3D', 128, 64);
 
-        const badgeTex = new THREE.CanvasTexture(labelCanvas);
-        const badgeGeo = new THREE.PlaneGeometry(0.8, 0.4);
-        const badgeMat = new THREE.MeshBasicMaterial({ map: badgeTex, side: THREE.DoubleSide });
-        const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
-        badgeMesh.position.set(0, currentY + 0.5, 0);
-        nodeGroup.add(badgeMesh);
+                const badgeTex = new THREE.CanvasTexture(labelCanvas);
+                const badgeGeo = new THREE.PlaneGeometry(0.8, 0.4);
+                const badgeMat = new THREE.MeshBasicMaterial({ map: badgeTex, side: THREE.DoubleSide });
+                const badgeMesh = new THREE.Mesh(badgeGeo, badgeMat);
+                badgeMesh.position.set(0, currentY + 0.5, 0);
+                nodeGroup.add(badgeMesh);
+            }
+        } catch (e) {
+            // Fallback sem placa de canvas
+        }
 
         if (isForInspector) {
             this.explodedLayers = layers;
@@ -234,6 +245,8 @@ class Geoniv3DEngine {
        3. POSICIONAR ITENS NO DIGITAL TWIN
        ========================================================================= */
     renderBoxesIn3DTerrain(items) {
+        if (!this.nodesGroup) return;
+
         while (this.nodesGroup.children.length > 0) {
             const obj = this.nodesGroup.children[0];
             this.nodesGroup.remove(obj);
@@ -246,9 +259,9 @@ class Geoniv3DEngine {
         let validGpsCount = 0;
 
         items.forEach(b => {
-            if (b.latitude && b.longitude) {
-                centerLat += b.latitude;
-                centerLng += b.longitude;
+            if (b.latitude !== null && b.latitude !== undefined && b.longitude !== null && b.longitude !== undefined) {
+                centerLat += Number(b.latitude);
+                centerLng += Number(b.longitude);
                 validGpsCount++;
             }
         });
@@ -269,9 +282,9 @@ class Geoniv3DEngine {
             let posX = 0;
             let posZ = 0;
 
-            if (item.latitude && item.longitude) {
-                posX = (item.longitude - centerLng) * scaleFactor;
-                posZ = (item.latitude - centerLat) * scaleFactor;
+            if (item.latitude !== null && item.latitude !== undefined && item.longitude !== null && item.longitude !== undefined) {
+                posX = (Number(item.longitude) - centerLng) * scaleFactor;
+                posZ = (Number(item.latitude) - centerLat) * scaleFactor;
             } else {
                 const angle = index * 1.5;
                 const radius = 6 + index * 4;
@@ -283,7 +296,9 @@ class Geoniv3DEngine {
             this.nodesGroup.add(nodeMesh);
         });
 
-        this.controls.target.set(0, 1, 0);
+        if (this.controls) {
+            this.controls.target.set(0, 1, 0);
+        }
     }
 
     /* =========================================================================
@@ -306,14 +321,16 @@ class Geoniv3DEngine {
 
         this.inspectorRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.inspectorRenderer.setSize(w, h);
-        this.inspectorRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.inspectorRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
         container.appendChild(this.inspectorRenderer.domElement);
 
-        this.inspectorControls = new THREE.OrbitControls(this.inspectorCamera, this.inspectorRenderer.domElement);
-        this.inspectorControls.enableDamping = true;
-        this.inspectorControls.autoRotate = true;
-        this.inspectorControls.autoRotateSpeed = 1.0;
+        if (THREE.OrbitControls) {
+            this.inspectorControls = new THREE.OrbitControls(this.inspectorCamera, this.inspectorRenderer.domElement);
+            this.inspectorControls.enableDamping = true;
+            this.inspectorControls.autoRotate = true;
+            this.inspectorControls.autoRotateSpeed = 1.0;
+        }
 
         const ambient = new THREE.AmbientLight(0xffffff, 0.8);
         this.inspectorScene.add(ambient);
@@ -334,7 +351,7 @@ class Geoniv3DEngine {
         const renderInspector = () => {
             if (!this.inspectorScene) return;
             requestAnimationFrame(renderInspector);
-            this.inspectorControls.update();
+            if (this.inspectorControls) this.inspectorControls.update();
             this.inspectorRenderer.render(this.inspectorScene, this.inspectorCamera);
         };
         renderInspector();
@@ -349,9 +366,11 @@ class Geoniv3DEngine {
     }
 
     /* =========================================================================
-       5. RAYCASTING DE CLIQUE (ESQUERDO E DIREITO)
+       5. RAYCASTING DE CLIQUE
        ========================================================================= */
     setupRaycaster() {
+        if (!this.renderer || !this.camera) return;
+
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
 
@@ -364,7 +383,6 @@ class Geoniv3DEngine {
         });
 
         this.renderer.domElement.addEventListener('pointerup', (e) => {
-            // Verificar se foi um clique estático e não um arrasto de rotação da câmera (distância < 6px)
             const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
             if (dist > 6) return;
 
@@ -393,16 +411,20 @@ class Geoniv3DEngine {
     animate() {
         requestAnimationFrame((t) => this.animate(t));
         if (this.controls) this.controls.update();
-        this.renderer.render(this.scene, this.camera);
+        if (this.renderer && this.scene && this.camera) {
+            this.renderer.render(this.scene, this.camera);
+        }
     }
 
     onResize() {
         if (!this.container || !this.renderer || !this.camera) return;
         const w = this.container.clientWidth;
         const h = this.container.clientHeight || 600;
-        this.camera.aspect = w / h;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(w, h);
+        if (w > 0 && h > 0) {
+            this.camera.aspect = w / h;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(w, h);
+        }
     }
 }
 

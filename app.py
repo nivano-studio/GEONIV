@@ -3,17 +3,21 @@ import json
 import uuid
 import math
 import socket
+import base64
 import datetime
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import shutil
 from PIL import Image
+import io
 
 from modules.exif_extractor import extract_metadata
 from modules.metadata_extractor import analyze_any_file
@@ -22,7 +26,7 @@ from modules.phone_osint import phone_lookup
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Teste dinâmico de permissão de escrita para compatibilidade total com Vercel
+# Configuração de diretórios com suporte completo a Vercel Serverless (/tmp)
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 DATA_FILE = os.path.join(BASE_DIR, "geoniv_data.json")
 
@@ -35,10 +39,23 @@ try:
 except Exception:
     UPLOADS_DIR = "/tmp/uploads"
     DATA_FILE = "/tmp/geoniv_data.json"
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
+    try:
+        os.makedirs(UPLOADS_DIR, exist_ok=True)
+    except Exception:
+        pass
 
 app = FastAPI(title="GEONIV 3D - Plataforma de Inteligência OSINT & GEOINT")
 
+# Middleware CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Exception Handler Global Amigável
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     import traceback
@@ -53,38 +70,64 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
-app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+# Configuração de Arquivos Estáticos e Templates
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# --- GERENCIAMENTO DE DADOS LOCAL (JSON) COM SUPORTE A READ-ONLY ---
+if os.path.exists(UPLOADS_DIR):
+    app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+# Fallback direto para arquivos estáticos no Vercel caso o middleware de mount falhe
+@app.get("/static/{file_path:path}")
+async def serve_static_fallback(file_path: str):
+    full_path = os.path.join(STATIC_DIR, file_path)
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        return FileResponse(full_path)
+    raise HTTPException(status_code=404, detail="Arquivo estático não encontrado.")
+
+# --- GERENCIAMENTO DE DADOS COM SUPORTE A READ-ONLY E SERVERLESS ---
+_IN_MEMORY_RECORDS: List[Dict[str, Any]] = []
+
 def load_records() -> list:
-    target_file = DATA_FILE
-    if not os.path.exists(target_file):
-        seed_file = os.path.join(BASE_DIR, "geoniv_data.json")
-        if os.path.exists(seed_file):
-            target_file = seed_file
-        else:
-            return []
-    try:
-        with open(target_file, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
+    global _IN_MEMORY_RECORDS
+    target_files = [
+        DATA_FILE,
+        "/tmp/geoniv_data.json",
+        os.path.join(BASE_DIR, "geoniv_data.json")
+    ]
+    for tf in target_files:
+        if os.path.exists(tf):
+            try:
+                with open(tf, "r", encoding="utf-8") as f:
+                    records = json.load(f)
+                    if records:
+                        _IN_MEMORY_RECORDS = records
+                        return records
+            except Exception:
+                pass
+
+    if _IN_MEMORY_RECORDS:
+        return _IN_MEMORY_RECORDS
+
+    return []
 
 def save_records(records: list):
-    target_file = DATA_FILE
-    try:
-        with open(target_file, "w", encoding="utf-8") as f:
-            json.dump(records, f, ensure_ascii=False, indent=2)
-    except (PermissionError, OSError):
-        tmp_file = "/tmp/geoniv_data.json"
+    global _IN_MEMORY_RECORDS
+    _IN_MEMORY_RECORDS = records
+
+    target_files = [DATA_FILE, "/tmp/geoniv_data.json"]
+    for tf in target_files:
         try:
-            with open(tmp_file, "w", encoding="utf-8") as f:
+            with open(tf, "w", encoding="utf-8") as f:
                 json.dump(records, f, ensure_ascii=False, indent=2)
-        except Exception:
-            pass
+            break
+        except (PermissionError, OSError):
+            continue
 
 def generate_next_code(records: list) -> str:
     count = len(records) + 1
@@ -98,6 +141,15 @@ def generate_next_code(records: list) -> str:
 @app.get("/api/index.py", response_class=HTMLResponse)
 async def read_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "online",
+        "service": "GEONIV OSINT & GEOINT Platform",
+        "version": "2.0.0",
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
 
 # --- API ENDPOINTS ---
 @app.get("/api/boxes")
@@ -118,28 +170,48 @@ async def upload_geo_photo(
     final_filename = f"file_{unique_id}{ext}"
     final_path = os.path.join(UPLOADS_DIR, final_filename)
     
-    with open(final_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    file_bytes = await file.read()
+    
+    try:
+        with open(final_path, "wb") as buffer:
+            buffer.write(file_bytes)
+    except Exception:
+        # Se falhar escrita física, continuamos em memória
+        pass
 
-    # Se for imagem, também salvamos uma versão otimizada se necessário
+    file_url = f"/uploads/{final_filename}"
+    base64_thumbnail = None
+
+    # Se for imagem, gerar Base64 data URI para resiliência no Vercel
     if ext in ['.jpg', '.jpeg', '.png', '.heic', '.webp', '.tiff', '.bmp']:
-        jpg_filename = f"img_{unique_id}.jpg"
-        jpg_path = os.path.join(UPLOADS_DIR, jpg_filename)
         try:
-            with Image.open(final_path) as img:
+            with Image.open(io.BytesIO(file_bytes)) as img:
                 rgb_img = img.convert("RGB")
-                rgb_img.save(jpg_path, "JPEG", quality=88)
-            file_url = f"/uploads/{jpg_filename}"
+                
+                # Salvar JPG otimizado no disco se possível
+                jpg_filename = f"img_{unique_id}.jpg"
+                jpg_path = os.path.join(UPLOADS_DIR, jpg_filename)
+                try:
+                    rgb_img.save(jpg_path, "JPEG", quality=85)
+                    file_url = f"/uploads/{jpg_filename}"
+                except Exception:
+                    pass
+
+                # Criar thumbnail base64 (máx 400px de largura) para persistência serverless
+                thumb_img = rgb_img.copy()
+                thumb_img.thumbnail((400, 400))
+                thumb_io = io.BytesIO()
+                thumb_img.save(thumb_io, format="JPEG", quality=80)
+                thumb_bytes = thumb_io.getvalue()
+                base64_thumbnail = f"data:image/jpeg;base64,{base64.b64encode(thumb_bytes).decode('ascii')}"
         except Exception:
-            file_url = f"/uploads/{final_filename}"
-    else:
-        file_url = f"/uploads/{final_filename}"
-        
+            pass
+
+    # Análise Forense Multi-Arquivo
     meta = analyze_any_file(final_path, file.filename)
     
     record_id = str(uuid.uuid4())
     code = generate_next_code(records)
-    
     spec = meta.get("specific_metadata", {})
 
     new_record = {
@@ -148,6 +220,7 @@ async def upload_geo_photo(
         "title": file.filename,
         "notes": notes,
         "photo_url": file_url,
+        "photo_thumbnail": base64_thumbnail,
         "filename": file.filename,
         "category": meta.get("category", "file"),
         "file_size": meta.get("file_size"),
@@ -271,7 +344,7 @@ async def delete_record(record_id: str):
 # --- CÁLCULO GEODÉSICO HAVERSINE OSINT ---
 @app.get("/api/osint/distance")
 async def calculate_distance(lat1: float, lng1: float, lat2: float, lng2: float):
-    R = 6371000
+    R = 6371000  # Raio da Terra em metros
     phi1 = math.radians(lat1)
     phi2 = math.radians(lat2)
     delta_phi = math.radians(lat2 - lat1)
@@ -294,15 +367,9 @@ async def calculate_distance(lat1: float, lng1: float, lat2: float, lng2: float)
         "bearing_degrees": round(bearing_deg, 2)
     }
 
-# --- NOVAS FERRAMENTAS OSINT DE REDE & INFRAESTRUTURA ---
-
+# --- FERRAMENTAS OSINT DE REDE & INFRAESTRUTURA ---
 @app.get("/api/osint/ip-lookup")
 async def ip_geolocation_lookup(target: str):
-    """
-    Geolocalização pública de IP / Domínio OSINT.
-    Resolve hostname para IP e consulta geolocalização física do servidor.
-    Plota automaticamente a localização no mapa 3D/2D.
-    """
     clean_target = target.strip().replace("http://", "").replace("https://", "").split("/")[0]
     
     try:
@@ -324,7 +391,6 @@ async def ip_geolocation_lookup(target: str):
         lat = geo_data.get("lat")
         lon = geo_data.get("lon")
 
-        # Salvar o servidor como um ponto de inteligência mapeado
         records = load_records()
         record_id = str(uuid.uuid4())
         code = generate_next_code(records)
@@ -351,9 +417,6 @@ async def ip_geolocation_lookup(target: str):
 
 @app.get("/api/osint/dns-lookup")
 async def dns_records_lookup(domain: str):
-    """
-    Resolução pública de registros DNS (A, Hostname) e porta.
-    """
     clean_domain = domain.strip().replace("http://", "").replace("https://", "").split("/")[0]
     result = {
         "domain": clean_domain,
@@ -373,15 +436,12 @@ async def dns_records_lookup(domain: str):
 
 @app.get("/api/osint/http-headers")
 async def http_headers_inspector(target: str):
-    """
-    Inspeção defensiva de cabeçalhos HTTP e Stack Tecnológico do servidor.
-    """
     if not target.startswith("http://") and not target.startswith("https://"):
         url = f"https://{target.strip()}"
     else:
         url = target.strip()
         
-    result = {
+    result: Dict[str, Any] = {
         "target_url": url,
         "status_code": None,
         "headers": {},
@@ -397,10 +457,8 @@ async def http_headers_inspector(target: str):
             headers_dict = dict(resp.headers)
             result["headers"] = headers_dict
 
-            # Análise de servidor
             result["server_tech"] = headers_dict.get("Server") or headers_dict.get("server") or "Oculto/CDN"
 
-            # Checagem de cabeçalhos defensivos de segurança
             sec_headers = {
                 "Strict-Transport-Security": "HSTS ausente",
                 "Content-Security-Policy": "CSP ausente",
@@ -423,21 +481,14 @@ async def http_headers_inspector(target: str):
     return result
 
 # --- OSINT DE TELEFONIA: CONSULTA DE NÚMERO DE TELEFONE ---
-
 @app.get("/api/osint/phone-lookup")
 async def phone_number_lookup(phone: str, plot: bool = True):
-    """
-    Consulta OSINT de número de telefone.
-    Identifica operadora, tipo de linha, localização do DDD,
-    e gera links para investigação em plataformas externas.
-    """
     clean_phone = phone.strip()
     if not clean_phone or len(clean_phone) < 7:
         raise HTTPException(status_code=400, detail="Número de telefone inválido ou muito curto.")
 
     result = phone_lookup(clean_phone)
 
-    # Se plot=True e temos localização do DDD, salvar como ponto no mapa
     if plot and result.get("ddd_info"):
         ddd_info = result["ddd_info"]
         lat = ddd_info.get("lat")

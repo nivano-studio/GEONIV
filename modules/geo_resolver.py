@@ -9,11 +9,12 @@ _REVERSE_GEOCODE_CACHE: Dict[str, Dict[str, Any]] = {}
 
 # Importar banco de DDDs se disponível em phone_osint
 try:
-    from modules.phone_osint import DDD_MAP
+    from modules.phone_osint import DDD_MAP, DDD_TABLE
 except ImportError:
     try:
-        from phone_osint import DDD_MAP
+        from phone_osint import DDD_MAP, DDD_TABLE
     except ImportError:
+        DDD_TABLE = {}
         DDD_MAP = {}
 
 
@@ -23,19 +24,18 @@ def reverse_geocode(lat: float, lng: float) -> Dict[str, Any]:
     Converte latitude e longitude em endereço detalhado (Rua, Bairro, Cidade, Estado, País, CEP).
     """
     if lat is None or lng is None:
-        return {"success": False, "address": None}
+        return {"success": False, "display_name": None, "error": "Coordenadas ausentes"}
 
-    cache_key = f"{round(lat, 4)},{round(lng, 4)}"
+    cache_key = f"{round(float(lat), 4)},{round(float(lng), 4)}"
     if cache_key in _REVERSE_GEOCODE_CACHE:
         return _REVERSE_GEOCODE_CACHE[cache_key]
 
     url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}&zoom=18&addressdetails=1"
-    
     headers = {
-        'User-Agent': 'GEONIV-OSINT-Platform/2.0 (Forensic Analysis & OSINT Tool)'
+        'User-Agent': 'GEONIV-OSINT-Platform/2.0 (Forensic Analysis & OSINT Tool; contact: admin@geoniv.local)'
     }
 
-    result = {
+    result: Dict[str, Any] = {
         "success": False,
         "display_name": None,
         "road": None,
@@ -69,13 +69,19 @@ def reverse_geocode(lat: float, lng: float) -> Dict[str, Any]:
                     "country": addr.get("country"),
                     "postcode": addr.get("postcode")
                 })
+                _REVERSE_GEOCODE_CACHE[cache_key] = result
+            elif "error" in data:
+                result["error"] = data.get("error")
     except Exception as e:
-        result["error"] = f"Geocodificação indisponível offline/timeout: {str(e)}"
+        result["error"] = f"Geocodificação indisponível: {str(e)}"
+
+    return result
+
 
 def lookup_cep(cep: str) -> Optional[Dict[str, Any]]:
     """Consulta CEP na API ViaCEP."""
     try:
-        cep_clean = re.sub(r'\D', '', cep)
+        cep_clean = re.sub(r'\D', '', str(cep))
         if len(cep_clean) != 8:
             return None
         url = f"https://viacep.com.br/ws/{cep_clean}/json/"
@@ -92,7 +98,7 @@ def lookup_cep(cep: str) -> Optional[Dict[str, Any]]:
 def geocode_address_query(query: str) -> Optional[Dict[str, Any]]:
     """Geocodificação direta de endereço (Texto -> Lat/Lng) via OpenStreetMap Nominatim."""
     try:
-        encoded = urllib.parse.quote(query)
+        encoded = urllib.parse.quote(query.strip())
         url = f"https://nominatim.openstreetmap.org/search?format=json&q={encoded}&limit=1"
         req = urllib.request.Request(url, headers={'User-Agent': 'GEONIV-OSINT-Platform/2.0'})
         with urllib.request.urlopen(req, timeout=4) as resp:
@@ -138,13 +144,12 @@ def resolve_cep_to_location(cep: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-
 def detect_scrubbing_and_clues(filename: str, has_gps: bool = False, has_exif: bool = False) -> Dict[str, Any]:
     """
     Análise de origem e descarte (scrubbing) de metadados para mídias sem EXIF/GPS.
     Detecta marcas d'água em nome de arquivo (WhatsApp, Telegram, Screenshot) e infere localização visual.
     """
-    res = {
+    res: Dict[str, Any] = {
         "scrubbing_detected": False,
         "scrubbing_source": None,
         "explanation": None,
@@ -154,6 +159,7 @@ def detect_scrubbing_and_clues(filename: str, has_gps: bool = False, has_exif: b
     }
 
     fn_upper = filename.upper()
+    active_ddd_map = DDD_TABLE or DDD_MAP
 
     # 1. Detecção de Descarte (Scrubbing) por Redes Sociais
     if not has_gps:
@@ -200,10 +206,10 @@ def detect_scrubbing_and_clues(filename: str, has_gps: bool = False, has_exif: b
 
     # 3. Busca por Códigos de DDD no Nome do Arquivo (Ex: DDD11, (11), DDD-21)
     ddd_match = re.search(r'(?:DDD[_\s-]?)?\(?([1-9]{2})\)?', filename, re.IGNORECASE)
-    if ddd_match and DDD_MAP:
+    if ddd_match and active_ddd_map:
         ddd_code = ddd_match.group(1)
-        if ddd_code in DDD_MAP:
-            ddd_info = DDD_MAP[ddd_code]
+        if ddd_code in active_ddd_map:
+            ddd_info = active_ddd_map[ddd_code]
             res["inferred_location_name"] = f"DDD {ddd_code} — {ddd_info.get('city')}/{ddd_info.get('uf')}"
             if not res["inferred_coords"]:
                 res["inferred_coords"] = {
@@ -220,8 +226,6 @@ def get_reverse_image_search_pivots(filename: str, photo_url: Optional[str] = No
     Gera atalhos diretos de investigação OSINT para Busca Reversa de Imagem Visual
     (Yandex, Google Lens, TinEye, Bing, GeoSpy AI).
     """
-    encoded_url = urllib.parse.quote(photo_url or "") if photo_url else ""
-    
     return {
         "google_lens": {
             "name": "Google Lens",

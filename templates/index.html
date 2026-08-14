@@ -14,7 +14,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Estilo Customizado GEONIV 3D -->
     <link rel="stylesheet" href="/static/css/style.css">
-
 </head>
 <body class="dark-theme">
     <div class="app-container">
@@ -43,7 +42,6 @@
                     <i class="fa-solid fa-circle-info" style="color: var(--accent-cyan);"></i> <strong>Dica Forense:</strong> Fotos originais de câmera gravam GPS nativo. Fotos enviadas via WhatsApp/redes têm o GPS removido no envio. PDFs com <strong>CEPs/Endereços</strong> no texto são geolocalizados automaticamente!
                 </div>
             </div>
-
 
             <!-- REGISTRO RECENTE SALVO NO NAVEGADOR (LOCALSTORAGE) -->
             <div class="history-panel glass-panel" id="localHistoryPanel">
@@ -95,6 +93,9 @@
                     </button>
                     <button class="tab-btn" data-tab="tabGeodesic" id="tabBtnGeodesic">
                         <i class="fa-solid fa-ruler-combined"></i> Calculador Geodésico
+                    </button>
+                    <button class="tab-btn" data-tab="tabOsintHub" id="tabBtnOsintHub">
+                        <i class="fa-solid fa-compass-drafting"></i> Central OSINT & Ferramentas
                     </button>
                     <button class="tab-btn" data-tab="tabDashboard" id="tabBtnDashboard">
                         <i class="fa-solid fa-chart-pie"></i> Relatório OSINT
@@ -217,7 +218,483 @@
                 </div>
             </div>
 
-            <!-- ABA 5: ESTATÍSTICAS OSINT -->
+            <!-- ABA 5: CENTRAL DE FERRAMENTAS & DIRETÓRIO OSINT -->
+            <div class="tab-content" id="tabOsintHub">
+                <div class="telemetry-dashboard glass-panel">
+                    <div class="osint-hub-header">
+                        <h2><i class="fa-solid fa-compass-drafting" style="color: var(--accent-cyan);"></i> Central de Ferramentas & Fontes de Dados OSINT</h2>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                            Guia categorizado das melhores ferramentas de inteligência em fontes abertas para investigação de e-mails, telefones, redes sociais, geolocalização e infraestrutura.
+                        </p>
+                    </div>
+
+                    <!-- BARRA DE FILTROS POR CATEGORIA E BUSCA RÁPIDA -->
+                    <div class="osint-filter-bar glass-panel" style="padding: 14px 18px; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+                        <div class="osint-tags-group" id="osintCategoryFilter">
+                            <button class="osint-filter-btn active" data-category="all"><i class="fa-solid fa-layer-group"></i> Todas</button>
+                            <button class="osint-filter-btn" data-category="email"><i class="fa-solid fa-envelope"></i> E-mail & Gmail</button>
+                            <button class="osint-filter-btn" data-category="phone"><i class="fa-solid fa-phone"></i> Telefonia</button>
+                            <button class="osint-filter-btn" data-category="people"><i class="fa-solid fa-user-secret"></i> Nomes & Usernames</button>
+                            <button class="osint-filter-btn" data-category="geoint"><i class="fa-solid fa-earth-americas"></i> GEOINT & Imagens</button>
+                            <button class="osint-filter-btn" data-category="network"><i class="fa-solid fa-network-wired"></i> Redes & Domínios</button>
+                            <button class="osint-filter-btn" data-category="breach"><i class="fa-solid fa-shield-virus"></i> Vazamentos & Senhas</button>
+                        </div>
+                        <div class="osint-search-wrap" style="flex: 1; min-width: 200px; max-width: 320px;">
+                            <input type="text" id="osintHubSearchInput" placeholder="Filtrar ferramentas por nome ou função..." class="custom-input" style="height: 36px; font-size: 12px;">
+                        </div>
+                    </div>
+
+                    <!-- GRID DE FERRAMENTAS OSINT -->
+                    <div class="osint-tools-grid" id="osintToolsGrid" style="margin-top: 20px;">
+
+                        <!-- CATEGORIA: EMAIL & GMAIL -->
+                        <div class="osint-tool-card glass-panel" data-category="email">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(66, 133, 244, 0.15); color: #4285f4;">
+                                    <i class="fa-solid fa-envelope-circle-check"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Holehe</h4>
+                                    <span class="osint-badge osint-badge-email">E-mail & Contas</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Verifica se um e-mail possui conta cadastrada em mais de 120 plataformas web (redes sociais, lojas e fóruns) utilizando rotas públicas sem alertar o usuário.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Instale via Python (`pip install holehe`) ou execute `holehe email@exemplo.com` para auditar a pegada digital de uma conta.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://github.com/megadose/holehe" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Ver Repositório</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="email">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(234, 67, 53, 0.15); color: #ea4335;">
+                                    <i class="fa-brands fa-google"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Epios (Google OSINT)</h4>
+                                    <span class="osint-badge osint-badge-email">Google & Gmail</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Ferramenta especializada em contas Google/Gmail. Descobre avaliações no Google Maps, Google Agenda público, ID interno (Gaia ID) e álbuns associados ao e-mail.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Insira o endereço Gmail alvo no site para descobrir o nome real e locais que o usuário avaliou publicamente.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://epios.klaz.dev/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Epios Web</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="email">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(249, 115, 22, 0.15); color: #f97316;">
+                                    <i class="fa-solid fa-bullseye"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Hunter.io</h4>
+                                    <span class="osint-badge osint-badge-email">E-mail Corporativo</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Localiza o padrão de e-mails corporativos de qualquer empresa (ex: `nome.sobrenome@empresa.com`) e lista e-mails públicos indexados na web por domínio.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Digite o domínio corporativo (ex: `empresa.com.br`) para mapear colaboradores e estrutura de contatos.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://hunter.io/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Hunter.io</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="email">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>EmailRep.io</h4>
+                                    <span class="osint-badge osint-badge-email">Reputação de E-mail</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Avalia a reputação de um endereço de e-mail: verifica se é descartável, se tem histórico de envio de spam, idade do e-mail e presença em vazamentos.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Excelente para triagem de segurança defensiva, detecção de contas falsas e prevenção de fraudes.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://emailrep.io/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar EmailRep</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- CATEGORIA: TELEFONIA -->
+                        <div class="osint-tool-card glass-panel" data-category="phone">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+                                    <i class="fa-solid fa-satellite-dish"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>PhoneInfoga</h4>
+                                    <span class="osint-badge osint-badge-phone">Telefonia Avançada</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Scanner avançado de números de telefone internacionais. Valida código de país, operadora original, tipo de linha e executa Google Dorks direcionados.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Execute via CLI ou Docker (`phoneinfoga scan -n +5511987654321`) para obter relatório estruturado.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://github.com/sundowndev/phoneinfoga" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Ver PhoneInfoga</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="phone">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(31, 182, 255, 0.15); color: #1fb6ff;">
+                                    <i class="fa-solid fa-phone-volume"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Truecaller</h4>
+                                    <span class="osint-badge osint-badge-phone">Identificador de Chamada</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Maior diretório colaborativo mundial de identificação de números, nomes de proprietários e histórico de denúncias de chamadas indesejadas e golpes.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Pesquise pelo número com o código do país (`+55`) para verificar o nome associado na agenda compartilhada.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://www.truecaller.com/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Truecaller</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="phone">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                                    <i class="fa-solid fa-phone-slash"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Tellows Brasil</h4>
+                                    <span class="osint-badge osint-badge-phone">Reputação de Número BR</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Comunidade brasileira para identificação de números desconhecidos, empresas de telemarketing abusivo, tentativas de golpe via WhatsApp e spoofing telefônico.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Consulte os dígitos finais do número para ler relatos de outros usuários que receberam ligações suspeitas.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://www.tellows.com.br/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Tellows</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- CATEGORIA: NOMES & USERNAMES -->
+                        <div class="osint-tool-card glass-panel" data-category="people">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
+                                    <i class="fa-solid fa-user-ninja"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Sherlock</h4>
+                                    <span class="osint-badge osint-badge-people">Username Hunt</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Busca a existência de um mesmo nome de usuário (nickname / handle) em mais de 400 redes sociais, fóruns, plataformas de jogos e repositórios.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Execute `python sherlock.py alvo_username` para receber uma lista completa de links de perfis ativos.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://github.com/sherlock-project/sherlock" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Ver Sherlock</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="people">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                                    <i class="fa-solid fa-id-badge"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>WhatsMyName</h4>
+                                    <span class="osint-badge osint-badge-people">Web Username Search</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Versão web rápida e eficiente para testar a presença de usernames em centenas de categorias de sites com filtros rápidos no navegador.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Acesse a interface web, digite o nome de usuário e filtre por categoria (Tech, Games, Dating, Social).
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://whatsmyname.app/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar WhatsMyName</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="people">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(236, 72, 153, 0.15); color: #ec4899;">
+                                    <i class="fa-solid fa-diagram-project"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Maigret</h4>
+                                    <span class="osint-badge osint-badge-people">Dossiê de Identidade</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Versão avançada de busca por username que cruza informações públicas (avatares, biografias, nomes reais e links mútuos) gerando um grafo visual completo do alvo.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Execute `maigret username --html --pdf` para compilar um relatório estruturado de pegada digital.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://github.com/soxoj/maigret" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Ver Maigret</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- CATEGORIA: GEOINT & IMAGENS -->
+                        <div class="osint-tool-card glass-panel" data-category="geoint">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                                    <i class="fa-solid fa-brain"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>GeoSpy AI</h4>
+                                    <span class="osint-badge osint-badge-geoint">IA GEOINT</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Modelo de inteligência artificial pioneiro em prever latitude, longitude e país de qualquer fotografia a partir de vegetação, arquitetura, clima e relevo.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Envie uma imagem que não tenha coordenadas EXIF/GPS para obter uma previsão de coordenadas prováveis.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://geospy.ai/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar GeoSpy AI</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="geoint">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                                    <i class="fa-solid fa-eye"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Yandex Visual Search</h4>
+                                    <span class="osint-badge osint-badge-geoint">Busca Reversa Visual</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Considerado o motor mais preciso do mundo em correspondência de estruturas físicas, fachadas de prédios, roupas, paisagens e reconhecimento facial público.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Faça upload de um corte da foto (edifício ou objeto) para encontrar outros ângulos do mesmo local na internet.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://yandex.com/images/search" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Yandex</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="geoint">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
+                                    <i class="fa-solid fa-sun"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>SunCalc</h4>
+                                    <span class="osint-badge osint-badge-geoint">Cronomapeamento Solar</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Calcula a trajetória do sol, altitude, azimute e o comprimento exato das sombras em qualquer ponto do planeta para qualquer data e horário histórico.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Compare a sombra dos objetos na foto com a posição simulada para determinar a hora em que a foto foi tirada.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://www.suncalc.org/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar SunCalc</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="geoint">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9;">
+                                    <i class="fa-solid fa-map-location"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Overpass Turbo</h4>
+                                    <span class="osint-badge osint-badge-geoint">Filtro OpenStreetMap</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Permite filtrar o mapa global com consultas SQL/XML combinadas (ex: "encontrar todos os cruzamentos com uma igreja a 50m de um posto de combustível").
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Use a linguagem de consulta Overpass para cruzar pistas visuais encontradas em imagens e afunilar a busca.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://overpass-turbo.eu/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Overpass</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- CATEGORIA: REDES & DOMÍNIOS -->
+                        <div class="osint-tool-card glass-panel" data-category="network">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(220, 38, 38, 0.15); color: #dc2626;">
+                                    <i class="fa-solid fa-radar"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Shodan</h4>
+                                    <span class="osint-badge osint-badge-network">Scanner de IoT & Servidores</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                O maior buscador do mundo para dispositivos conectados à internet: servidores, roteadores, câmeras de segurança, bancos de dados expostos e portas abertas.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Pesquise por `org:"Nome da Empresa"` ou `net:IP/24` para mapear a infraestrutura pública exposta.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://www.shodan.io/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Shodan</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="network">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(37, 99, 235, 0.15); color: #2563eb;">
+                                    <i class="fa-solid fa-certificate"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>crt.sh (Certificate Transparency)</h4>
+                                    <span class="osint-badge osint-badge-network">Subdomínios SSL</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Registrador público de todos os certificados SSL emitidos na história da internet. Revela subdomínios ocultos (`admin.`, `dev.`, `vpn.`) em segundos.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Pesquise por `%.dominio.com` para listar todos os hosts ativos ou históricos do domínio.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://crt.sh/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar crt.sh</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="network">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Wayback Machine</h4>
+                                    <span class="osint-badge osint-badge-network">Arquivo Histórico Web</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Arquivo mundial de versões históricas de sites. Permite visualizar conteúdos que foram apagados, páginas antigas de equipe e termos que saíram do ar.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Digite a URL de uma página e navegue pelo calendário histórico de capturas salvas desde a década de 90.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://web.archive.org/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar Wayback</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- CATEGORIA: VAZAMENTOS & SENHAS -->
+                        <div class="osint-tool-card glass-panel" data-category="breach">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(220, 38, 38, 0.15); color: #ef4444;">
+                                    <i class="fa-solid fa-key"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>Have I Been Pwned?</h4>
+                                    <span class="osint-badge osint-badge-breach">Vazamentos de Dados</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Banco de dados com mais de 12 bilhões de registros vazados. Informa em quais incidentes de segurança globais um determinado e-mail ou telefone esteve envolvido.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Insira seu e-mail corporativo ou pessoal para verificar a exposição e planejar rotação de credenciais.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://haveibeenpwned.com/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar HIBP</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="osint-tool-card glass-panel" data-category="breach">
+                            <div class="osint-card-top">
+                                <div class="osint-tool-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+                                    <i class="fa-solid fa-shield-virus"></i>
+                                </div>
+                                <div class="osint-tool-titles">
+                                    <h4>VirusTotal</h4>
+                                    <span class="osint-badge osint-badge-breach">Threat Intelligence</span>
+                                </div>
+                            </div>
+                            <p class="osint-tool-desc">
+                                Analisador multiscanner com +70 motores de antivírus para verificar arquivos suspeitos, hashes (MD5, SHA-256), domínios, IPs maliciosos e certificados.
+                            </p>
+                            <div class="osint-tool-howto">
+                                <strong>Como usar:</strong> Copie a hash SHA-256 gerada no GEONIV e cole no VirusTotal para verificar reputação e amostras de malware.
+                            </div>
+                            <div class="osint-tool-footer">
+                                <a href="https://www.virustotal.com/" target="_blank" rel="noopener noreferrer" class="osint-visit-btn">
+                                    <span>Acessar VirusTotal</span> <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 6: ESTATÍSTICAS OSINT -->
             <div class="tab-content" id="tabDashboard">
                 <div class="telemetry-dashboard glass-panel">
                     <h2><i class="fa-solid fa-compass"></i> Painel de Geodados & Inteligência EXIF</h2>

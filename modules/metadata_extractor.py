@@ -5,7 +5,7 @@ import mimetypes
 import datetime
 import zipfile
 import xml.etree.ElementTree as ET
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from PIL import Image, ExifTags
 
 # HEIC support
@@ -25,11 +25,16 @@ except ImportError:
 try:
     from modules.geo_resolver import reverse_geocode, detect_scrubbing_and_clues, get_reverse_image_search_pivots, resolve_cep_to_location
 except ImportError:
-    from geo_resolver import reverse_geocode, detect_scrubbing_and_clues, get_reverse_image_search_pivots, resolve_cep_to_location
+    try:
+        from geo_resolver import reverse_geocode, detect_scrubbing_and_clues, get_reverse_image_search_pivots, resolve_cep_to_location
+    except ImportError:
+        def reverse_geocode(lat, lng): return {"success": False}
+        def detect_scrubbing_and_clues(fn, has_gps=False, has_exif=False): return {"scrubbing_detected": False}
+        def get_reverse_image_search_pivots(fn, url=None): return {}
+        def resolve_cep_to_location(cep): return None
 
 
-
-def compute_file_hashes(filepath: str) -> Dict[str, str]:
+def compute_file_hashes(filepath: str) -> Dict[str, Optional[str]]:
     """Calcula Hashes Forenses MD5 e SHA256 para verificação de integridade."""
     md5_hash = hashlib.md5()
     sha256_hash = hashlib.sha256()
@@ -61,17 +66,19 @@ def _convert_to_degrees(value) -> float:
     try:
         if isinstance(value, (int, float)):
             return float(value)
-        d = float(value[0])
-        m = float(value[1])
-        s = float(value[2])
-        return d + (m / 60.0) + (s / 3600.0)
+        if hasattr(value, "__getitem__") and len(value) >= 3:
+            d = float(value[0])
+            m = float(value[1])
+            s = float(value[2])
+            return d + (m / 60.0) + (s / 3600.0)
+        return float(value)
     except Exception:
         return 0.0
 
 
 def extract_image_metadata(filepath: str) -> Dict[str, Any]:
     """Extração avançada de EXIF e GPS para Imagens (JPG, PNG, HEIC, WEBP, TIFF)."""
-    result = {
+    result: Dict[str, Any] = {
         "has_gps": False,
         "latitude": None,
         "longitude": None,
@@ -94,8 +101,8 @@ def extract_image_metadata(filepath: str) -> Dict[str, Any]:
 
     try:
         with Image.open(filepath) as img:
-            result["image_width"] = img.width
-            result["image_height"] = img.height
+            result["image_width"] = int(img.width)
+            result["image_height"] = int(img.height)
 
             exif = img.getexif()
             exif_raw = {}
@@ -107,15 +114,15 @@ def extract_image_metadata(filepath: str) -> Dict[str, Any]:
                 if exif_data:
                     exif_raw = {ExifTags.TAGS.get(k, k): v for k, v in exif_data.items()}
 
-            if exif_raw:
+            if exif_raw or exif:
                 result["has_exif"] = True
-                make = exif_raw.get(ExifTags.Base.Make) or exif_raw.get("Make")
-                model = exif_raw.get(ExifTags.Base.Model) or exif_raw.get("Model")
-                dt = (exif_raw.get(ExifTags.Base.DateTimeOriginal) or 
-                      exif_raw.get(ExifTags.Base.DateTime) or 
-                      exif_raw.get("DateTimeOriginal") or 
-                      exif_raw.get("DateTime"))
-                software = exif_raw.get(ExifTags.Base.Software) or exif_raw.get("Software")
+                make = exif_raw.get("Make") or (exif.get(ExifTags.Base.Make) if exif else None)
+                model = exif_raw.get("Model") or (exif.get(ExifTags.Base.Model) if exif else None)
+                dt = (exif_raw.get("DateTimeOriginal") or 
+                      exif_raw.get("DateTime") or 
+                      (exif.get(ExifTags.Base.DateTimeOriginal) if exif else None) or 
+                      (exif.get(ExifTags.Base.DateTime) if exif else None))
+                software = exif_raw.get("Software") or (exif.get(ExifTags.Base.Software) if exif else None)
 
                 if make: result["camera_make"] = str(make).strip()
                 if model: result["camera_model"] = str(model).strip()
@@ -127,7 +134,7 @@ def extract_image_metadata(filepath: str) -> Dict[str, Any]:
                         result["is_edited"] = True
 
                 # IFD Exif extra
-                if hasattr(exif, "get_ifd"):
+                if exif and hasattr(exif, "get_ifd"):
                     try:
                         exif_ifd = exif.get_ifd(ExifTags.IFD.Exif)
                         if exif_ifd:
@@ -147,15 +154,18 @@ def extract_image_metadata(filepath: str) -> Dict[str, Any]:
 
                 # GPS IFD
                 gps_info = {}
-                if hasattr(exif, "get_ifd"):
-                    gps_ifd = exif.get_ifd(ExifTags.IFD.GPSInfo)
-                    if gps_ifd:
-                        for key, val in gps_ifd.items():
-                            sub_tag = ExifTags.GPSTAGS.get(key, key)
-                            gps_info[sub_tag] = val
+                if exif and hasattr(exif, "get_ifd"):
+                    try:
+                        gps_ifd = exif.get_ifd(ExifTags.IFD.GPSInfo)
+                        if gps_ifd:
+                            for key, val in gps_ifd.items():
+                                sub_tag = ExifTags.GPSTAGS.get(key, key)
+                                gps_info[sub_tag] = val
+                    except Exception:
+                        pass
 
                 if not gps_info:
-                    raw_gps = exif_raw.get(ExifTags.Base.GPSInfo) or exif_raw.get("GPSInfo")
+                    raw_gps = exif_raw.get("GPSInfo") or (exif.get(ExifTags.Base.GPSInfo) if exif else None)
                     if isinstance(raw_gps, dict):
                         for key, val in raw_gps.items():
                             sub_tag = ExifTags.GPSTAGS.get(key, key)
@@ -173,8 +183,8 @@ def extract_image_metadata(filepath: str) -> Dict[str, Any]:
                     lng = _convert_to_degrees(lng_val)
                     if str(lng_ref).upper() != "E": lng = -lng
 
-                    result["latitude"] = round(lat, 7)
-                    result["longitude"] = round(lng, 7)
+                    result["latitude"] = round(float(lat), 7)
+                    result["longitude"] = round(float(lng), 7)
                     result["has_gps"] = True
 
                 alt_val = gps_info.get("GPSAltitude") or gps_info.get(6)
@@ -192,7 +202,7 @@ def extract_image_metadata(filepath: str) -> Dict[str, Any]:
 
 def extract_pdf_metadata(filepath: str) -> Dict[str, Any]:
     """Extração avançada de metadados forenses de PDF + Varredura de Texto por CEPs/Coordenadas."""
-    result = {
+    result: Dict[str, Any] = {
         "title": None,
         "author": None,
         "subject": None,
@@ -216,15 +226,15 @@ def extract_pdf_metadata(filepath: str) -> Dict[str, Any]:
     try:
         reader = PdfReader(filepath)
         result["pages_count"] = len(reader.pages)
-        result["is_encrypted"] = reader.is_encrypted
+        result["is_encrypted"] = bool(reader.is_encrypted)
 
         meta = reader.metadata
         if meta:
-            result["title"] = meta.title or meta.get("/Title")
-            result["author"] = meta.author or meta.get("/Author")
-            result["subject"] = meta.subject or meta.get("/Subject")
-            result["creator"] = meta.creator or meta.get("/Creator")
-            result["producer"] = meta.producer or meta.get("/Producer")
+            result["title"] = str(meta.title or meta.get("/Title") or "").strip() or None
+            result["author"] = str(meta.author or meta.get("/Author") or "").strip() or None
+            result["subject"] = str(meta.subject or meta.get("/Subject") or "").strip() or None
+            result["creator"] = str(meta.creator or meta.get("/Creator") or "").strip() or None
+            result["producer"] = str(meta.producer or meta.get("/Producer") or "").strip() or None
 
             c_date = meta.get("/CreationDate")
             m_date = meta.get("/ModDate")
@@ -248,19 +258,18 @@ def extract_pdf_metadata(filepath: str) -> Dict[str, Any]:
             unique_ceps = list(set(found_ceps))
             if unique_ceps:
                 result["extracted_ceps"] = unique_ceps
-                # Tentar geolocalizar o primeiro CEP válido encontrado
                 for cep in unique_ceps[:3]:
                     loc = resolve_cep_to_location(cep)
                     if loc:
                         result["inferred_coords"] = {
-                            "latitude": loc["latitude"],
-                            "longitude": loc["longitude"]
+                            "latitude": float(loc["latitude"]),
+                            "longitude": float(loc["longitude"])
                         }
                         result["inferred_address"] = loc["display_name"]
-                        result["clues_found"].append(f"CEP {loc['cep']} extraído do texto do PDF ({loc['street']}, {loc['city']}/{loc['uf']})")
+                        result["clues_found"].append(f"CEP {loc.get('cep', cep)} extraído do texto do PDF ({loc.get('street', '')}, {loc.get('city', '')}/{loc.get('uf', '')})")
                         break
 
-            # 2. Busca por Coordenadas explícitas no texto (Ex: -22.9068, -43.1729)
+            # 2. Busca por Coordenadas explícitas no texto
             if not result["inferred_coords"]:
                 coord_match = re.search(r'([-+]?\d{1,2}\.\d{4,7})[,\s_]+([-+]?\d{1,3}\.\d{4,7})', full_text)
                 if coord_match:
@@ -281,7 +290,7 @@ def extract_pdf_metadata(filepath: str) -> Dict[str, Any]:
 
 def extract_office_metadata(filepath: str) -> Dict[str, Any]:
     """Extração nativa de metadados de arquivos Office (DOCX, XLSX, PPTX) via estrutura ZIP XML."""
-    result = {
+    result: Dict[str, Any] = {
         "title": None,
         "author": None,
         "last_modified_by": None,
@@ -296,7 +305,6 @@ def extract_office_metadata(filepath: str) -> Dict[str, Any]:
 
     try:
         with zipfile.ZipFile(filepath, "r") as z:
-            # Ler docProps/core.xml
             if "docProps/core.xml" in z.namelist():
                 xml_data = z.read("docProps/core.xml")
                 root = ET.fromstring(xml_data)
@@ -314,14 +322,13 @@ def extract_office_metadata(filepath: str) -> Dict[str, Any]:
                 created_elem = root.find('dcterms:created', namespaces)
                 modified_elem = root.find('dcterms:modified', namespaces)
 
-                if title_elem is not None: result["title"] = title_elem.text
-                if creator_elem is not None: result["author"] = creator_elem.text
-                if last_mod_elem is not None: result["last_modified_by"] = last_mod_elem.text
-                if revision_elem is not None: result["revision"] = revision_elem.text
-                if created_elem is not None: result["creation_date"] = created_elem.text
-                if modified_elem is not None: result["mod_date"] = modified_elem.text
+                if title_elem is not None and title_elem.text: result["title"] = title_elem.text.strip()
+                if creator_elem is not None and creator_elem.text: result["author"] = creator_elem.text.strip()
+                if last_mod_elem is not None and last_mod_elem.text: result["last_modified_by"] = last_mod_elem.text.strip()
+                if revision_elem is not None and revision_elem.text: result["revision"] = revision_elem.text.strip()
+                if created_elem is not None and created_elem.text: result["creation_date"] = created_elem.text.strip()
+                if modified_elem is not None and modified_elem.text: result["mod_date"] = modified_elem.text.strip()
 
-            # Ler docProps/app.xml
             if "docProps/app.xml" in z.namelist():
                 xml_data = z.read("docProps/app.xml")
                 root = ET.fromstring(xml_data)
@@ -330,9 +337,9 @@ def extract_office_metadata(filepath: str) -> Dict[str, Any]:
                 words_elem = root.find('{http://schemas.openxmlformats.org/officeDocument/2006/extended-properties}Words')
                 pages_elem = root.find('{http://schemas.openxmlformats.org/officeDocument/2006/extended-properties}Pages') or root.find('{http://schemas.openxmlformats.org/officeDocument/2006/extended-properties}Slides')
 
-                if app_elem is not None: result["application"] = app_elem.text
-                if words_elem is not None: result["words_count"] = words_elem.text
-                if pages_elem is not None: result["pages_count"] = pages_elem.text
+                if app_elem is not None and app_elem.text: result["application"] = app_elem.text.strip()
+                if words_elem is not None and words_elem.text: result["words_count"] = words_elem.text.strip()
+                if pages_elem is not None and pages_elem.text: result["pages_count"] = pages_elem.text.strip()
 
     except Exception as e:
         result["error"] = f"Erro na análise do arquivo Office: {str(e)}"
@@ -342,13 +349,12 @@ def extract_office_metadata(filepath: str) -> Dict[str, Any]:
 
 def extract_media_metadata(filepath: str, ext: str) -> Dict[str, Any]:
     """Extração básica de arquivos de áudio/vídeo."""
-    result = {
+    return {
         "media_type": "Áudio" if ext in ['.mp3', '.wav', '.flac', '.ogg', '.m4a'] else "Vídeo",
         "duration": None,
         "format": ext.upper().replace(".", ""),
         "error": None
     }
-    return result
 
 
 def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> Dict[str, Any]:
@@ -363,7 +369,7 @@ def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> 
     file_size_bytes = os.path.getsize(filepath) if os.path.exists(filepath) else 0
     mime_type, _ = mimetypes.guess_type(fn)
 
-    base_record = {
+    base_record: Dict[str, Any] = {
         "filename": fn,
         "file_ext": ext,
         "file_size": format_file_size(file_size_bytes),
@@ -372,6 +378,7 @@ def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> 
         "hashes": compute_file_hashes(filepath),
         "category": "file",
         "has_gps": False,
+        "is_inferred_gps": False,
         "latitude": None,
         "longitude": None,
         "altitude": None,
@@ -383,7 +390,7 @@ def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> 
         "osint_pivots": get_reverse_image_search_pivots(fn)
     }
 
-    # 1. IMAGENS (.jpg, .jpeg, .png, .heic, .webp, .tiff)
+    # 1. IMAGENS
     if ext in ['.jpg', '.jpeg', '.png', '.heic', '.webp', '.tiff', '.bmp']:
         base_record["category"] = "image"
         img_meta = extract_image_metadata(filepath)
@@ -391,28 +398,25 @@ def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> 
 
         if img_meta.get("has_gps"):
             base_record["has_gps"] = True
-            base_record["latitude"] = img_meta["latitude"]
-            base_record["longitude"] = img_meta["longitude"]
+            base_record["latitude"] = float(img_meta["latitude"])
+            base_record["longitude"] = float(img_meta["longitude"])
             base_record["altitude"] = img_meta.get("altitude")
 
-        # Câmera
-        cam = f"{img_meta.get('camera_make', '')} {img_meta.get('camera_model', '')}".strip()
+        cam = f"{img_meta.get('camera_make') or ''} {img_meta.get('camera_model') or ''}".strip()
         base_record["camera_info"] = cam if cam else ("Sem metadados EXIF" if not img_meta.get("has_exif") else "Câmera Desconhecida")
         if img_meta.get("datetime"):
             base_record["date_added"] = img_meta["datetime"]
 
-        # Análise de Scrubbing e Clues (para fotos com ou sem GPS)
         scrub = detect_scrubbing_and_clues(fn, has_gps=base_record["has_gps"], has_exif=img_meta.get("has_exif", False))
         base_record["scrubbing_analysis"] = scrub
 
-        # Se não tinha GPS mas a análise inferiu coordenadas por DDD ou nome de arquivo
         if not base_record["has_gps"] and scrub.get("inferred_coords"):
-            base_record["latitude"] = scrub["inferred_coords"]["latitude"]
-            base_record["longitude"] = scrub["inferred_coords"]["longitude"]
+            base_record["latitude"] = float(scrub["inferred_coords"]["latitude"])
+            base_record["longitude"] = float(scrub["inferred_coords"]["longitude"])
             base_record["has_gps"] = True
             base_record["is_inferred_gps"] = True
 
-    # 2. DOCUMENTOS PDF (.pdf)
+    # 2. DOCUMENTOS PDF
     elif ext == '.pdf':
         base_record["category"] = "pdf"
         pdf_meta = extract_pdf_metadata(filepath)
@@ -421,13 +425,12 @@ def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> 
         if pdf_meta.get("creation_date"):
             base_record["date_added"] = pdf_meta["creation_date"]
         if pdf_meta.get("inferred_coords"):
-            base_record["latitude"] = pdf_meta["inferred_coords"]["latitude"]
-            base_record["longitude"] = pdf_meta["inferred_coords"]["longitude"]
+            base_record["latitude"] = float(pdf_meta["inferred_coords"]["latitude"])
+            base_record["longitude"] = float(pdf_meta["inferred_coords"]["longitude"])
             base_record["has_gps"] = True
             base_record["is_inferred_gps"] = True
 
-
-    # 3. DOCUMENTOS OFFICE (.docx, .xlsx, .pptx)
+    # 3. DOCUMENTOS OFFICE
     elif ext in ['.docx', '.xlsx', '.pptx']:
         base_record["category"] = "document"
         office_meta = extract_office_metadata(filepath)
@@ -436,7 +439,7 @@ def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> 
         if office_meta.get("author"):
             base_record["camera_info"] += f" — Autor: {office_meta['author']}"
 
-    # 4. MÍDIAS DE ÁUDIO / VÍDEO (.mp3, .wav, .mp4, .mov, .m4a, .mkv)
+    # 4. MÍDIAS DE ÁUDIO / VÍDEO
     elif ext in ['.mp3', '.wav', '.flac', '.ogg', '.m4a', '.mp4', '.mov', '.avi', '.mkv']:
         base_record["category"] = "audio" if ext in ['.mp3', '.wav', '.flac', '.ogg', '.m4a'] else "video"
         media_meta = extract_media_metadata(filepath, ext)
@@ -448,8 +451,8 @@ def analyze_any_file(filepath: str, original_filename: Optional[str] = None) -> 
         base_record["category"] = "file"
         base_record["camera_info"] = f"Arquivo {ext.upper()}"
 
-    # 6. Geocodificação Reversa (OSM Nominatim) se tivermos latitude e longitude (reais ou inferidas)
-    if base_record.get("latitude") and base_record.get("longitude"):
+    # 6. Geocodificação Reversa
+    if base_record.get("latitude") is not None and base_record.get("longitude") is not None:
         base_record["address"] = reverse_geocode(base_record["latitude"], base_record["longitude"])
 
     return base_record
