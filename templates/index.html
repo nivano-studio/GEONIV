@@ -2,7 +2,10 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#070a12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>GEONIV 3D - Plataforma de Inteligência OSINT & GEOINT</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -16,17 +19,41 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="dark-theme">
+    <!-- CABEÇALHO MOBILE EXCLUSIVO PARA SMARTPHONES -->
+    <header class="mobile-header">
+        <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir Lista de Alvos">
+            <i class="fa-solid fa-bars-staggered"></i>
+            <span class="mobile-target-badge" id="mobileTargetBadge">0</span>
+        </button>
+        <div class="mobile-brand">
+            <i class="fa-solid fa-satellite glow-icon"></i>
+            <span>GEONIV <small>OSINT</small></span>
+        </div>
+        <div class="mobile-quick-actions">
+            <label for="mobilePhotoInput" class="mobile-camera-btn" title="Analisar Foto da Câmera / Galeria">
+                <i class="fa-solid fa-camera"></i>
+                <input type="file" id="mobilePhotoInput" accept="image/*,application/pdf" capture="environment" style="display: none;">
+            </label>
+        </div>
+    </header>
+
+    <!-- OVERLAY DE BACKDROP DO SIDEBAR NO MOBILE -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
     <div class="app-container">
         <!-- BARRA LATERAL (SIDEBAR OSINT) -->
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="logo-icon glow-pulse">
-                    <i class="fa-solid fa-satellite"></i>
+        <aside class="sidebar" id="mainSidebar">
+            <div class="sidebar-top-bar">
+                <div class="brand">
+                    <div class="logo-icon glow-pulse">
+                        <i class="fa-solid fa-satellite"></i>
+                    </div>
+                    <div class="brand-text">
+                        <h1>GEONIV <span class="badge-3d">OSINT</span></h1>
+                        <span>Geospatial & Network Intelligence</span>
+                    </div>
                 </div>
-                <div class="brand-text">
-                    <h1>GEONIV <span class="badge-3d">OSINT</span></h1>
-                    <span>Geospatial & Network Intelligence</span>
-                </div>
+                <button type="button" class="sidebar-close-btn" id="closeSidebarBtn" aria-label="Fechar Gaveta">&times;</button>
             </div>
 
             <!-- CARD DE UPLOAD DE FOTOS E MULTI-ARQUIVOS COM METADADOS -->
@@ -840,6 +867,58 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA DE NAVEGAÇÃO INFERIOR MOBILE (THUMB ZONE) -->
+    <nav class="mobile-bottom-nav">
+        <button type="button" class="mobile-nav-item" id="mobileNavTargets">
+            <i class="fa-solid fa-crosshairs"></i>
+            <span>Alvos</span>
+        </button>
+        <button type="button" class="mobile-nav-item active" id="mobileNav2D" data-target-tab="tab2D">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span>Mapa 2D</span>
+        </button>
+        <button type="button" class="mobile-nav-item" id="mobileNav3D" data-target-tab="tab3D">
+            <i class="fa-solid fa-cube"></i>
+            <span>3D Forense</span>
+        </button>
+        <button type="button" class="mobile-nav-item" id="mobileNavOsint" data-target-tab="tabOsintHub">
+            <i class="fa-solid fa-network-wired"></i>
+            <span>OSINT Hub</span>
+        </button>
+        <button type="button" class="mobile-nav-item" id="mobileNavTools">
+            <i class="fa-solid fa-bars-progress"></i>
+            <span>Ferramentas</span>
+        </button>
+    </nav>
+
+    <!-- MENU MODAL DE FERRAMENTAS EXTRAS NO MOBILE -->
+    <div class="mobile-tools-sheet" id="mobileToolsSheet">
+        <div class="mobile-tools-content glass-panel">
+            <div class="mobile-tools-header">
+                <h3><i class="fa-solid fa-screwdriver-wrench glow-icon"></i> Módulos & Ferramentas OSINT</h3>
+                <button type="button" id="closeMobileToolsBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="mobile-tools-grid">
+                <button type="button" class="mobile-tool-card" data-switch-tab="tabNetwork">
+                    <i class="fa-solid fa-server glow-text-cyan"></i>
+                    <span>IP & Rede OSINT</span>
+                </button>
+                <button type="button" class="mobile-tool-card" data-switch-tab="tabDdd">
+                    <i class="fa-solid fa-phone glow-text-green"></i>
+                    <span>Telefone & DDD</span>
+                </button>
+                <button type="button" class="mobile-tool-card" data-switch-tab="tabGeodesic">
+                    <i class="fa-solid fa-route glow-text-amber"></i>
+                    <span>Distância & Azimute</span>
+                </button>
+                <button type="button" class="mobile-tool-card" data-switch-tab="tabDashboard">
+                    <i class="fa-solid fa-chart-pie glow-text-yellow"></i>
+                    <span>Métricas & Dashboard</span>
+                </button>
             </div>
         </div>
     </div>

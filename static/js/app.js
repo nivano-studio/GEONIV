@@ -287,6 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const listContainer = document.getElementById('boxesList');
         if (!listContainer) return;
 
+        const badge = document.getElementById('mobileTargetBadge');
+        if (badge) badge.innerText = boxes ? boxes.length : 0;
+
         if (!boxes || boxes.length === 0) {
             listContainer.innerHTML = `
                 <div class="empty-state">
@@ -298,15 +301,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         listContainer.innerHTML = '';
+
         boxes.forEach(box => {
             const item = document.createElement('div');
-            item.className = `box-item ${selectedBox?.id === box.id ? 'selected' : ''}`;
-            
+            item.className = 'box-item';
+            item.setAttribute('data-id', box.id);
+
             const hasGps = box.latitude !== null && box.latitude !== undefined && box.longitude !== null && box.longitude !== undefined;
             const gmapsUrl = hasGps ? `https://www.google.com/maps?q=${box.latitude},${box.longitude}` : '#';
-            const displayTitle = box.filename || box.title || box.code;
 
-            // Selo por Categoria de Arquivo
+            const displayTitle = box.filename || box.title || 'Alvo';
+
             let categoryBadge = '';
             const cat = box.category || 'image';
             if (cat === 'pdf') {
@@ -358,6 +363,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             item.addEventListener('click', () => {
                 selectedBox = box;
+                document.getElementById('mainSidebar')?.classList.remove('open');
+                document.getElementById('sidebarBackdrop')?.classList.remove('active');
                 openBox3DInspectorModal(box);
             });
 
@@ -1253,25 +1260,115 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* =========================================================================
-       GERENCIAMENTO DE ABAS
+       GERENCIAMENTO DE ABAS & NAVEGAÇÃO MOBILE
        ========================================================================= */
+    function switchActiveTab(targetTabId) {
+        // Desktop Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if (btn.getAttribute('data-tab') === targetTabId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // Mobile Bottom Nav Items
+        document.querySelectorAll('.mobile-nav-item').forEach(item => {
+            if (item.getAttribute('data-target-tab') === targetTabId) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+
+        // Tab Content Panels
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(targetTabId)?.classList.add('active');
+
+        if (targetTabId === 'tab2D' && map2D) {
+            setTimeout(() => map2D.invalidateSize(), 250);
+        }
+        if (targetTabId === 'tab3D' && engine3D) {
+            setTimeout(() => engine3D.onResize(), 250);
+        }
+    }
+
     function setupTabSwitching() {
         const tabBtns = document.querySelectorAll('.tab-btn');
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                tabBtns.forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-                btn.classList.add('active');
                 const targetTabId = btn.getAttribute('data-tab');
-                document.getElementById(targetTabId)?.classList.add('active');
+                switchActiveTab(targetTabId);
+            });
+        });
 
-                if (targetTabId === 'tab2D' && map2D) {
-                    setTimeout(() => map2D.invalidateSize(), 200);
-                }
-                if (targetTabId === 'tab3D' && engine3D) {
-                    setTimeout(() => engine3D.onResize(), 200);
-                }
+        setupMobileNavigation();
+    }
+
+    function setupMobileNavigation() {
+        const sidebar = document.getElementById('mainSidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        const menuBtn = document.getElementById('mobileMenuBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const mobilePhotoInput = document.getElementById('mobilePhotoInput');
+        const toolsSheet = document.getElementById('mobileToolsSheet');
+        const btnTools = document.getElementById('mobileNavTools');
+        const closeToolsBtn = document.getElementById('closeMobileToolsBtn');
+
+        function openSidebar() {
+            sidebar?.classList.add('open');
+            backdrop?.classList.add('active');
+        }
+
+        function closeSidebar() {
+            sidebar?.classList.remove('open');
+            backdrop?.classList.remove('active');
+        }
+
+        menuBtn?.addEventListener('click', openSidebar);
+        document.getElementById('mobileNavTargets')?.addEventListener('click', openSidebar);
+        closeSidebarBtn?.addEventListener('click', closeSidebar);
+        backdrop?.addEventListener('click', () => {
+            closeSidebar();
+            toolsSheet?.classList.remove('active');
+        });
+
+        // Câmera / Upload Rápido no Mobile
+        mobilePhotoInput?.addEventListener('change', () => {
+            if (mobilePhotoInput.files && mobilePhotoInput.files.length > 0) {
+                const files = Array.from(mobilePhotoInput.files);
+                mobilePhotoInput.value = '';
+                handlePhotoUpload(files);
+            }
+        });
+
+        // Barra de navegação inferior
+        document.querySelectorAll('.mobile-nav-item[data-target-tab]').forEach(item => {
+            item.addEventListener('click', () => {
+                const targetTab = item.getAttribute('data-target-tab');
+                switchActiveTab(targetTab);
+                closeSidebar();
+                toolsSheet?.classList.remove('active');
+            });
+        });
+
+        // Menu de ferramentas extras
+        btnTools?.addEventListener('click', () => {
+            toolsSheet?.classList.toggle('active');
+            backdrop?.classList.toggle('active');
+        });
+
+        closeToolsBtn?.addEventListener('click', () => {
+            toolsSheet?.classList.remove('active');
+            backdrop?.classList.remove('active');
+        });
+
+        document.querySelectorAll('.mobile-tool-card[data-switch-tab]').forEach(card => {
+            card.addEventListener('click', () => {
+                const targetTab = card.getAttribute('data-switch-tab');
+                switchActiveTab(targetTab);
+                toolsSheet?.classList.remove('active');
+                backdrop?.classList.remove('active');
             });
         });
     }
